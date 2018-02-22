@@ -1,6 +1,8 @@
 package microweb.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,6 +29,8 @@ public class GlobalHandler implements Filter {
      */
     public GlobalHandler() {
     	this.logger = Logger.getLogger(this.getClass().getPackage().getName());
+    	
+    	Util.init();
     }
 
 	/**
@@ -44,16 +48,32 @@ public class GlobalHandler implements Filter {
 		String path = req.getRequestURI();
 		this.logger.finest("path: " + path);
 		
-	   
-	    if (path.startsWith("/site/css")) {
-	    	//forward on statuc css urls
-	    	this.logger.finest("getting static resource");
-	        chain.doFilter(request, response);
-	    } else {
-	    	//handle all other urls with servlet
-	    	this.logger.finest("redirecting to controller");
-	        request.getRequestDispatcher("/Controller" + path).forward(request, response);
-	    }
+		//FIXME: implement global check to handle input parameters and validate which services can take which parameters
+		List<String> sites = new ArrayList<String>();
+		sites.add("prep");
+		sites.add("lounge");
+		sites.add("website2");
+		
+		String microwebContext = Util.getConfig().getProperty("microweb-context");
+		
+		if (Util.isMicrowebRoot(path)) {
+			String staticPath = path.substring(microwebContext.length() + 1);
+
+			if (staticPath.equals("") || staticPath.equals("/")) {
+				this.logger.finest("path starts with microweb context [" + microwebContext + "] and static path is: [" + staticPath + "]. redirecting to microweb admin.");
+				request.getRequestDispatcher("/" + Util.getConfig().getProperty("controller")).forward(request, response);
+			} else {
+				this.logger.finest("path starts with microweb context [" + microwebContext + "] and static path is: [" + staticPath + "]. loading static asset.");
+				chain.doFilter(request, response);
+			}
+			
+			
+			
+		} else {
+			this.logger.finest("path does not start with microweb context [" + microwebContext + "] forwarding to static path: [" + path + "]");
+			chain.doFilter(request, response);
+		}
+		
 	}
 
 	/**

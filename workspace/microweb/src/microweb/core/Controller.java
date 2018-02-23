@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 //@WebServlet("/*")
 public class Controller extends HttpServlet {
 	private static final long serialVersionUID = 1L;
+	private static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	
 	Logger logger;
 	
@@ -62,16 +63,34 @@ public class Controller extends HttpServlet {
 		if (Util.isController(requestUri)) {
 			logger.finest("Controller called");
 			
-			String action = request.getParameter("action");
+			String action = request.getParameter("Action");
+			String name = request.getParameter("Name");
 			
 			if (action == null || action.equals("") || action.trim().equals("")) {
 				
 				action = "Page";
-				String name = "Portal";
+				name = "AdminConsole";
 				
 				if (logger.isLoggable(Level.FINE)) {
 					logger.fine("action is not given, defaulting to show portal");
 				}
+			}
+			
+			Properties pageRegistry = new Properties();
+
+			pageRegistry.put("AdminConsole", TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
+			
+			if (action.equals("Page")) {
+				
+				String template = pageRegistry.getProperty(name);
+				
+				if (template == null || template.equals("") || template.trim().equals("")) {
+					throw new RuntimeException("No configuration for action: " + name);
+				}
+				
+				RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(template);
+				dispatcher.forward(request, response);
+				return;
 			}
 		} else {
 			logger.finest("Controller was not called");

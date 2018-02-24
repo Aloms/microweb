@@ -2,7 +2,11 @@ package microweb.core;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,21 +53,32 @@ public class GlobalHandler implements Filter {
 		this.logger.finest("path: " + path);
 		
 		//FIXME: implement global check to handle input parameters and validate which services can take which parameters
-		List<String> sites = new ArrayList<String>();
-		sites.add("prep");
-		sites.add("lounge");
-		sites.add("website2");
+		Map<String, String> sitesRegistry = new HashMap<String, String>();
+		sitesRegistry.put("prep", "prep");
+		sitesRegistry.put("lounge", "lounge");
+		sitesRegistry.put("website2", "website2");
 		
 		String microwebContext = Util.getConfig().getProperty("microweb-context");
 		
-		if (Util.isMicrowebRoot(path)) {
+		if (path.startsWith(Util.getMicrowebPath())) {
 			String staticPath = path.substring(microwebContext.length() + 1);
 
 			if (staticPath.equals("") || staticPath.equals("/")) {
 				this.logger.finest("path starts with microweb context [" + microwebContext + "] and static path is: [" + staticPath + "]. redirecting to microweb admin.");
 				request.getRequestDispatcher("/" + Util.getConfig().getProperty("controller")).forward(request, response);
 			} else {
+				
 				this.logger.finest("path starts with microweb context [" + microwebContext + "] and static path is: [" + staticPath + "]. loading static asset.");
+				
+				String site = staticPath.substring(1).split("/")[0];
+				this.logger.fine("site:" + site);
+				
+				if (sitesRegistry.containsKey(site)) {
+					this.logger.finer("found " + site + " in site registry");
+				} else {
+					this.logger.finer("could not find " + site + " in site registry");
+				}
+				
 				chain.doFilter(request, response);
 			}
 			

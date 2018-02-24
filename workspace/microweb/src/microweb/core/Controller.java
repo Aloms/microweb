@@ -91,6 +91,8 @@ public class Controller extends HttpServlet {
 				RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(template);
 				dispatcher.forward(request, response);
 				return;
+			} else {
+				logger.warning("Unrecognised action: " + action);
 			}
 		} else {
 			logger.finest("Controller was not called");

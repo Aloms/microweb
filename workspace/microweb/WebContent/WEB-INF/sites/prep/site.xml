@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+	<context>prep</context>
+	<properties>
+		<property name="defaultSlug" value="index.html" />
+		<property name="defaultTemplate" value="main.jsp" />
+	</properties>
+	<structure>
+		<node type="section" name="users">
+			<node type="section" name="update" />
+		</node>
+		<node type="section" name="threads">
+			<node type="section" name="thread" />
+		</node>
+		<node type="section" name="test">
+			<node type="section" name="overrideTemplate" template="override.jsp"/>
+			<node type="section" name="overrideUri" uri="this-uri.data" canonicalUri="this-is-the-canonical-url"/>
+		</node>
+		<node type="redirect" name="friendlyUri" uri="/friendly" redirect="/threads/thread/thread1"/>
+		<node type="redirect" name="friendlyUri2" uri="/friendly/url2"  redirect="/users"/>
+	</structure>
+</site>

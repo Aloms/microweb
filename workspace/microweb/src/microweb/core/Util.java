@@ -6,6 +6,10 @@ import java.util.logging.Logger;
 
 public class Util {
 
+	public static final String TEMPLATE_PATH = "/WEB-INF/templates";
+	public static final String SITES_KEY = "sites";
+	
+	
 	private static Logger logger = Logger.getLogger(Util.class.getPackage().getName());
 	
 	private static Properties properties = new Properties();

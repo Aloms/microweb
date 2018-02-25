@@ -19,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 //@WebServlet("/*")
 public class Controller extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	private static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	
 	Logger logger;
 	
@@ -78,7 +77,7 @@ public class Controller extends HttpServlet {
 			
 			Properties pageRegistry = new Properties();
 
-			pageRegistry.put("AdminConsole", TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
+			pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
 			
 			if (action.equals("Page")) {
 				

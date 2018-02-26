@@ -4,7 +4,8 @@ public class Redirect extends Node {
 	
 	private String redirect;
 
-	public Redirect() {
+	public Redirect(String name) {
+		super(name);
 		this.type = this.REDIRECT;
 	}
 	

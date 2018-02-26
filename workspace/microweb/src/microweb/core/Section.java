@@ -5,7 +5,8 @@ public class Section extends Node {
 	private String template;
 	private String canonicalUri;
 	
-	public Section() {
+	public Section(String name) {
+		super(name);
 		this.type = this.SECTION;
 	}
 	

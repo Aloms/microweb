@@ -23,12 +23,17 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.tomcat.util.digester.Digester;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 
 /**
@@ -81,7 +86,7 @@ public class GlobalHandler implements Filter {
 			String siteKey = i.next();
 			
 			String siteHome = sitesRegistry.get(siteKey);
-			String siteConfigPath = siteHome + "/site.xml";
+			String siteConfigPath = siteHome + "/config.xml";
 			
 			String absolutePath = request.getServletContext().getRealPath(siteConfigPath);
 			File f = new File(absolutePath);
@@ -95,7 +100,43 @@ public class GlobalHandler implements Filter {
 				
 				
 				
+				
+				
 				//FIXME: initialise url registry for this site
+				
+				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder builder;
+				try {
+					builder = factory.newDocumentBuilder();
+					Document doc = builder.parse(f.getAbsoluteFile());
+					
+					Map<String, Node> uriRegistry = new HashMap<String, Node>();
+					
+					logger.finest("populating uri registry for site [" + site.getName() + "]");
+					
+					Element e = doc.getDocumentElement();
+					
+					logger.finest("document node: " + e.toString());
+					
+					org.w3c.dom.Node strutureNode = e.getElementsByTagName("structure").item(0);
+					logger.finest("strutureNode: " + strutureNode.toString());
+					
+					NodeList rootNodes = strutureNode.getChildNodes();
+					logger.finest("rootNodes: " + rootNodes.getLength());
+					
+					
+					populateURIMappings(uriRegistry, rootNodes);
+					
+					logger.finest("populating uri registry for site [" + site.getName() + "]");
+				} catch (ParserConfigurationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SAXException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
 				
 				request.getServletContext().setAttribute(Util.SITES_KEY, sites);
 				
@@ -159,6 +200,40 @@ public class GlobalHandler implements Filter {
 			chain.doFilter(request, response);
 		}
 		
+	}
+
+	private void populateURIMappings(Map<String, Node> uriRegistry, NodeList childNodes) {
+		if (childNodes == null) {
+			return;
+		}
+		
+		logger.finest("Processing " + childNodes.getLength() + " nodes");
+		for (int i = 0; i < childNodes.getLength(); i++) {
+			org.w3c.dom.Node n = childNodes.item(i);
+			
+			//logger.finest(n.toString());
+			
+			if(n.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
+				NamedNodeMap attributes = n.getAttributes();
+				
+				String name = attributes.getNamedItem("name").getNodeValue();
+				String type = attributes.getNamedItem("type").getNodeValue();
+				
+				Node node = null;
+				if (Integer.parseInt(type) == Node.SECTION) {
+					node = new Section(name);
+					
+				} else if (Integer.parseInt(type) == Node.REDIRECT) {
+					node = new Redirect(name);fdgsdfg
+					
+				} else {
+					logger.warning("Unknown node type: " + type + " for node named: " + name);
+				}
+				logger.finest("processing node: " + name);
+			} else {
+				continue;
+			}
+		}
 	}
 
 	/**

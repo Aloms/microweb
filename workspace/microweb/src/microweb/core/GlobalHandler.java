@@ -35,6 +35,8 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import microweb.model.Site;
+
 
 /**
  * Servlet Filter implementation class GlobalHandler
@@ -71,81 +73,32 @@ public class GlobalHandler implements Filter {
 		//FIXME: implement global check to handle input parameters and validate which services can take which parameters
 		
 		//FIXME: move creation of sitesRegistry to application initialisation
-		Map<String, String> sitesRegistry = new ConcurrentHashMap<String, String>();
-		sitesRegistry.put("prep", "/WEB-INF/sites/prep");
-		sitesRegistry.put("lounge", "/WEB-INF/sites/lounge");
-		sitesRegistry.put("website2", "/WEB-INF/sites/website2");
+		Map<String, String> sitesConfigurationRegistry = new ConcurrentHashMap<String, String>();
+		sitesConfigurationRegistry.put("prep", "/WEB-INF/sites/prep/config.xml");
+		sitesConfigurationRegistry.put("lounge", "/WEB-INF/sites/lounge");
+		sitesConfigurationRegistry.put("website2", "/WEB-INF/sites/website2");
 		
 		//sites contains global set of loaded sites
-		Map<String, Site> sites = new ConcurrentHashMap<String, Site>();
+		Map<String, Site> sitesRegistry = new ConcurrentHashMap<String, Site>();
 				
 		
-		Iterator<String> i = sitesRegistry.keySet().iterator();
+		Iterator<String> i = sitesConfigurationRegistry.keySet().iterator();
 		
 		while (i.hasNext()) {
+			
 			String siteKey = i.next();
 			
-			String siteHome = sitesRegistry.get(siteKey);
-			String siteConfigPath = siteHome + "/config.xml";
+			String siteConfig = sitesConfigurationRegistry.get(siteKey);
 			
-			String absolutePath = request.getServletContext().getRealPath(siteConfigPath);
-			File f = new File(absolutePath);
+			String absolutePath = request.getServletContext().getRealPath(siteConfig);
 			
-			if (f.exists()) {
-				logger.info("Initialising site [" + siteKey + "], configuration file is [" + absolutePath + "]");
-				
-				Site site = new Site(siteKey);
-				
-				sites.put(site.getName(), site);
-				
-				
-				
-				
-				
-				//FIXME: initialise url registry for this site
-				
-				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder builder;
-				try {
-					builder = factory.newDocumentBuilder();
-					Document doc = builder.parse(f.getAbsoluteFile());
-					
-					Map<String, Node> uriRegistry = new HashMap<String, Node>();
-					
-					logger.finest("populating uri registry for site [" + site.getName() + "]");
-					
-					Element e = doc.getDocumentElement();
-					
-					logger.finest("document node: " + e.toString());
-					
-					org.w3c.dom.Node strutureNode = e.getElementsByTagName("structure").item(0);
-					logger.finest("strutureNode: " + strutureNode.toString());
-					
-					NodeList rootNodes = strutureNode.getChildNodes();
-					logger.finest("rootNodes: " + rootNodes.getLength());
-					
-					
-					populateURIMappings(uriRegistry, rootNodes);
-					
-					logger.finest("populating uri registry for site [" + site.getName() + "]");
-				} catch (ParserConfigurationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (SAXException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				
-				
-				request.getServletContext().setAttribute(Util.SITES_KEY, sites);
-				
-			} else {
-				logger.warning("The Site Registry contains an entry for a site named [" + siteKey + "] but no site configuration file could be found at [" + absolutePath + "]");
-			}
+			Site site = SiteFactory.createFromXML(absolutePath);
 			
-			
+			sitesRegistry.put(site.getName(), site);
 		}
+		
+		request.getServletContext().setAttribute(Util.SITES_KEY, sitesRegistry);
+		
 		//Map<String, Node> urlRegistry
 		
 		String microwebContext = Util.getConfig().getProperty("microweb-context");
@@ -219,16 +172,25 @@ public class GlobalHandler implements Filter {
 				String name = attributes.getNamedItem("name").getNodeValue();
 				String type = attributes.getNamedItem("type").getNodeValue();
 				
-				Node node = null;
+				
 				if (Integer.parseInt(type) == Node.SECTION) {
-					node = new Section(name);
+					Section section = new Section(name);
 					
+					String uri = attributes.getNamedItem("uri").getNodeValue();
+					
+					
+					uriRegistry.put(section.getUri(), section);
 				} else if (Integer.parseInt(type) == Node.REDIRECT) {
-					node = new Redirect(name);fdgsdfg
+					Redirect redirect = new Redirect(name);
+					String uri = attributes.getNamedItem("uri").getNodeValue();
 					
+					redirect.setUri(uri);
+					uriRegistry.put(redirect.getUri(), redirect);
 				} else {
 					logger.warning("Unknown node type: " + type + " for node named: " + name);
 				}
+
+				
 				logger.finest("processing node: " + name);
 			} else {
 				continue;

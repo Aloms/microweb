@@ -1,111 +1,83 @@
 package microweb.core;
 
-import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
+import microweb.model.Node;
+import microweb.model.Redirect;
 import microweb.model.Site;
 
-public class SiteFactory {
+public abstract class SiteFactory {
 
-	private static Logger logger = Logger.getLogger(SiteFactory.class.getPackage().getName());
-	
-	
-	public static Site createFromXML(String xmlFilename) {
-		
-		//check if file exists
-		if (!new File(xmlFilename).exists()) {
-			throw new Exception("no configuration file could be found at: " + xmlFilename);
-		}
-		
-		
-		logger.info("Initialising site from configuration file is [" + xmlFilename + "]");
-		
-		
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		Document doc = builder.parse(xmlFilename);
-		
-		Map<String, Node> uriRegistry = new HashMap<String, Node>();
-		
-		logger.finest("populating uri registry for site [" + site.getName() + "]");
-		
-		Element e = doc.getDocumentElement();
-		
-		logger.finest("document node: " + e.toString());
-		
-		org.w3c.dom.Node strutureNode = e.getElementsByTagName("structure").item(0);
-		logger.finest("strutureNode: " + strutureNode.toString());
-		
-		NodeList rootNodes = strutureNode.getChildNodes();
-		logger.finest("rootNodes: " + rootNodes.getLength());
-		
-		
-		populateURIMappings(uriRegistry, rootNodes);
-		
-		logger.finest("populating uri registry for site [" + site.getName() + "]");
-		
-		SiteImpl site = new SiteImpl();
-		
-		
-		
-		SiteFactory site = new SiteFactory(siteKey);
-		
-		sites.put(site.getName(), site);
-		
-		
-		
-		
-		
-		//FIXME: initialise url registry for this site
-		
-		
-		try {
-			
-		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SAXException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-		
-		
-		
-		
-		
-		return site;
-	}
+	protected class NodeImpl implements Node {
 
-	
-	protected class SiteImpl implements Site {
+		private String id;
 		private String name;
-		private Map<String, Node> urlRegistry;
-		private Map<String, Node> nodes;
+		private String label;
+		private String template;
+		private String content;
 		
-		protected SiteImpl() {
-			urlRegistry = new ConcurrentHashMap<String, Node>();
-			nodes = new ConcurrentHashMap<String, Node>();
+		public String getId() {
+			return id;
 		}
-		
-		
-		@Override
+		public void setId(String id) {
+			this.id = id;
+		}
 		public String getName() {
-			return this.name;
+			return name;
+		}
+		public void setName(String name) {
+			this.name = name;
+		}
+		public String getLabel() {
+			return label;
+		}
+		public void setLabel(String label) {
+			this.label = label;
+		}
+		public String getTemplate() {
+			return template;
+		}
+		public void setTemplate(String template) {
+			this.template = template;
+		}
+		public String getContent() {
+			return content;
+		}
+		public void setContent(String content) {
+			this.content = content;
 		}
 		
 	}
+	
+	
+	public class RedirectImpl implements Redirect {
+		
+		private String redirect;
+		private String uri;
+		private String type;
+		
+		public String getRedirect() {
+			return redirect;
+		}
+		public void setRedirect(String redirect) {
+			this.redirect = redirect;
+		}
+		public String getUri() {
+			return uri;
+		}
+		public void setUri(String uri) {
+			this.uri = uri;
+		}
+		public String getType() {
+			return type;
+		}
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		
+	}
+	
+	
 }

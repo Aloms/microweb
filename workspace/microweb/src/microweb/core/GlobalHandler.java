@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -26,6 +27,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.tomcat.util.digester.Digester;
@@ -35,6 +37,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import microweb.model.Node;
 import microweb.model.Site;
 
 
@@ -75,8 +78,8 @@ public class GlobalHandler implements Filter {
 		//FIXME: move creation of sitesRegistry to application initialisation
 		Map<String, String> sitesConfigurationRegistry = new ConcurrentHashMap<String, String>();
 		sitesConfigurationRegistry.put("prep", "/WEB-INF/sites/prep/config.xml");
-		sitesConfigurationRegistry.put("lounge", "/WEB-INF/sites/lounge");
-		sitesConfigurationRegistry.put("website2", "/WEB-INF/sites/website2");
+		//sitesConfigurationRegistry.put("lounge", "/WEB-INF/sites/lounge");
+		//sitesConfigurationRegistry.put("website2", "/WEB-INF/sites/website2");
 		
 		//sites contains global set of loaded sites
 		Map<String, Site> sitesRegistry = new ConcurrentHashMap<String, Site>();
@@ -92,9 +95,16 @@ public class GlobalHandler implements Filter {
 			
 			String absolutePath = request.getServletContext().getRealPath(siteConfig);
 			
-			Site site = SiteFactory.createFromXML(absolutePath);
+			Site site;
+			try {
+				site = XMLSiteFactory.createFromXML(absolutePath);
+				sitesRegistry.put(site.getName(), site);
+				logger.info("added [" + site.getName() + "] to site registry.");
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "Could not initialise site: " + siteKey + "(" + absolutePath + ")", e);
+			}
 			
-			sitesRegistry.put(site.getName(), site);
+			
 		}
 		
 		request.getServletContext().setAttribute(Util.SITES_KEY, sitesRegistry);
@@ -113,37 +123,77 @@ public class GlobalHandler implements Filter {
 				
 				this.logger.finest("path starts with microweb context [" + microwebContext + "] and static path is: [" + staticPath + "]. loading static asset.");
 				
-				String site = staticPath.substring(1).split("/")[0];
+				String siteName = staticPath.substring(1).split("/")[0];
 				
-				this.logger.fine("site:" + site);
+				this.logger.fine("siteUri:" + siteName);
 				
+				Map<String, Site> sites = (Map<String, Site>) request.getServletContext().getAttribute(Util.SITES_KEY);
 				
-				if (sitesRegistry.containsKey(site)) {
-					this.logger.finer("found [" + site + "] in site registry");
-					String siteRelativePath = staticPath.substring(site.length() + 1);
-					this.logger.fine("siteRelativePath:" + siteRelativePath);
-					
-					/*
-					DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-					DocumentBuilder builder = factory.newDocumentBuilder();
-					Document doc = builder.parse("/WEB-INF/sites/prep/prep.xml");
-					
-					XPathFactory xPathfactory = XPathFactory.newInstance();
-					XPath xpath = xPathfactory.newXPath();
-					
-					//first look for fully qualified urls
-					//XPathExpression expr = xpath.compile("//Type[@type_id=\"4218\"]");
-					XPathExpression expr = xpath.compile("/site/structure//node[@type_id=\"4218\"]");
-					NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-					
-					XPathExpression expr = xpath.compile("/site/structure/");
-					*/
-					
+				if (sites == null) {
+					logger.severe("No Sites registry found under key: [" + Util.SITES_KEY + "]");
 				} else {
-					this.logger.finer("could not find [" + site + "] in site registry");
+					if (sites.containsKey(siteName)) {
+						this.logger.finer("found [" + siteName + "] in site registry");
+						
+						Site site = sites.get(siteName);
+						
+						String siteRelativePath = staticPath.substring(siteName.length() + 1);
+						this.logger.fine("siteRelativePath:" + siteRelativePath);
+						
+						XPathFactory xPathfactory = XPathFactory.newInstance();
+						XPath xpath = xPathfactory.newXPath();
+						
+						String xpathStr = "/site/structure" + siteRelativePath;
+						
+						try {
+							logger.finest("Getting [" + site.getName() + "] site node: " + xpathStr);
+							XPathExpression expr = xpath.compile(xpathStr);
+							
+							Node node = site.getNode(expr);
+							
+							String action = request.getParameter("Action");
+							String name = request.getParameter("Name");
+							
+							if (action == null || action.equals("") || action.trim().equals("")) {
+								
+								action = "Page";
+								name = "AdminConsole";
+								
+								if (logger.isLoggable(Level.FINE)) {
+									logger.fine("action is not given, defaulting to show portal");
+								}
+							}
+							
+							Properties pageRegistry = new Properties();
+
+							pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
+							
+							
+						} catch (XPathExpressionException e) {
+							logger.severe("error is xpath expression [" + xpathStr + "]");
+						}
+						
+						/*
+						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+						DocumentBuilder builder = factory.newDocumentBuilder();
+						Document doc = builder.parse("/WEB-INF/sites/prep/prep.xml");
+						
+						XPathFactory xPathfactory = XPathFactory.newInstance();
+						XPath xpath = xPathfactory.newXPath();
+						
+						//first look for fully qualified urls
+						//XPathExpression expr = xpath.compile("//Type[@type_id=\"4218\"]");
+						XPathExpression expr = xpath.compile("/site/structure//node[@type_id=\"4218\"]");
+						NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+						
+						XPathExpression expr = xpath.compile("/site/structure/");
+						*/
+						chain.doFilter(request, response);
+						
+					} else {
+						this.logger.finer("could not find [" + site + "] in site registry");
+					}
 				}
-				
-				chain.doFilter(request, response);
 			}
 			
 			
@@ -155,48 +205,7 @@ public class GlobalHandler implements Filter {
 		
 	}
 
-	private void populateURIMappings(Map<String, Node> uriRegistry, NodeList childNodes) {
-		if (childNodes == null) {
-			return;
-		}
-		
-		logger.finest("Processing " + childNodes.getLength() + " nodes");
-		for (int i = 0; i < childNodes.getLength(); i++) {
-			org.w3c.dom.Node n = childNodes.item(i);
-			
-			//logger.finest(n.toString());
-			
-			if(n.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
-				NamedNodeMap attributes = n.getAttributes();
-				
-				String name = attributes.getNamedItem("name").getNodeValue();
-				String type = attributes.getNamedItem("type").getNodeValue();
-				
-				
-				if (Integer.parseInt(type) == Node.SECTION) {
-					Section section = new Section(name);
-					
-					String uri = attributes.getNamedItem("uri").getNodeValue();
-					
-					
-					uriRegistry.put(section.getUri(), section);
-				} else if (Integer.parseInt(type) == Node.REDIRECT) {
-					Redirect redirect = new Redirect(name);
-					String uri = attributes.getNamedItem("uri").getNodeValue();
-					
-					redirect.setUri(uri);
-					uriRegistry.put(redirect.getUri(), redirect);
-				} else {
-					logger.warning("Unknown node type: " + type + " for node named: " + name);
-				}
-
-				
-				logger.finest("processing node: " + name);
-			} else {
-				continue;
-			}
-		}
-	}
+	
 
 	/**
 	 * @see Filter#init(FilterConfig)

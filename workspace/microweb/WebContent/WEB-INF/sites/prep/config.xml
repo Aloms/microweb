@@ -1,40 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<site>
+<site name="prep">
 	<context>prep</context>
 	<properties>
 		<property name="defaultSlug" value="index.html" />
 		<property name="defaultTemplate" value="main.jsp" />
 	</properties>
 	<structure>
-		<node id="0" type="root" name="prep" label="Prep Home">
-			<node id="1" type="section" name="users" label="Users">
-				<node id="2" type="section" name="update" label="Add/Update User"/>
+		<node id="0" name="prep" label="Prep Home">
+			<node id="1" name="users" label="Users">
+				<node id="2" name="update" label="Add/Update User"/>
 			</node>
-			<node id="3" type="section" name="threads" label="Threads">
-				<node id="4" type="section" name="thread" label="Add/Update Thread"/>
+			<node id="3" name="threads" label="Threads">
+				<node id="4" name="thread" label="Add/Update Thread"/>
 			</node>
-			<node id="5" type="section" name="test">
-				<node id="6" type="section" name="overrideTemplate" template="override.jsp"/>
-				<node id="7" type="section" name="overrideUri" uri="this-uri.data" canonicalUri="this-is-the-canonical-url"/>
+			<node id="5" name="test">
+				<node id="6" name="overrideTemplate" template="override.jsp"/>
+				<node id="7" name="page-example.htm" content="example-content"/>
 			</node>
 		</node>
 	</structure>
-	<menus>
-		<menu name="top-menu">
-			<item name="top-menu-1" nodeId="0">
-				<item name="top-menu-1-1" nodeId="1"/>
-				<item name="top-menu-1-2">
-					<item name="top-menu-1-2-3" redirectUri="/users"/>
-				</item>
-			</item>
-			<item name="top-menu-2" nodeId="3"/>
-		</menu>
-		<menu name="footer">
-			<item name="footer-1" nodeId="1"/>
-		</menu>
-	</menus>
 	<redirects>
-		<redirect name="friendlyUri" uri="/friendly" redirectUri="/threads/thread/thread1"/>
-		<redirect name="friendlyUri2" uri="/friendly/url2"  redirectUri="/users"/>
+		<redirect uri="/friendly" redirectUri="/threads/thread/thread1" type="301"/>
+		<redirect uri="/friendly/url2"  redirectUri="/users"/>
 	</redirects>
 </site>

@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import microweb.model.Action;
+
 /**
  * Servlet implementation class Controller
  */
@@ -62,37 +64,47 @@ public class Controller extends HttpServlet {
 		if (Util.isController(requestUri)) {
 			logger.finest("Controller called");
 			
-			String action = request.getParameter("Action");
-			String name = request.getParameter("Name");
+			Action action = (Action) request.getAttribute("Action");
 			
-			if (action == null || action.equals("") || action.trim().equals("")) {
+			if (action != null) {
 				
-				action = "Page";
-				name = "AdminConsole";
-				
-				if (logger.isLoggable(Level.FINE)) {
-					logger.fine("action is not given, defaulting to show portal");
-				}
-			}
-			
-			Properties pageRegistry = new Properties();
-
-			pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
-			
-			if (action.equals("Page")) {
-				
-				String template = pageRegistry.getProperty(name);
-				
-				if (template == null || template.equals("") || template.trim().equals("")) {
-					throw new RuntimeException("No configuration for action: " + name);
-				}
-				
-				RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(template);
-				dispatcher.forward(request, response);
-				return;
+				logger.fine("found existing action: " + requestUri);
+				action.doAction(request, response, this.getServletContext());
 			} else {
-				logger.warning("Unrecognised action: " + action);
+				logger.fine("no action found to handle the uri: " + action.toString());
+				String actionParam = request.getParameter("Action");
+				String name = request.getParameter("Name");
+				
+				if (actionParam == null || actionParam.equals("") || actionParam.trim().equals("")) {
+					
+					actionParam = "Page";
+					name = "AdminConsole";
+					
+					if (logger.isLoggable(Level.FINE)) {
+						logger.fine("action is not given, defaulting to show portal");
+					}
+				}
+				
+				Properties pageRegistry = new Properties();
+
+				pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
+				
+				if (actionParam.equals("Page")) {
+					
+					String template = pageRegistry.getProperty(name);
+					
+					if (template == null || template.equals("") || template.trim().equals("")) {
+						throw new RuntimeException("No configuration for action: " + name);
+					}
+					
+					RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(template);
+					dispatcher.forward(request, response);
+					return;
+				} else {
+					logger.warning("Unrecognised action: " + actionParam);
+				}
 			}
+			
 		} else {
 			logger.finest("Controller was not called");
 		}

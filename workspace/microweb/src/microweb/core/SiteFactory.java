@@ -3,13 +3,14 @@ package microweb.core;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import microweb.model.Node;
+import microweb.model.Section;
+import microweb.model.Action;
 import microweb.model.Redirect;
 import microweb.model.Site;
 
 public abstract class SiteFactory {
-
-	protected class NodeImpl implements Node {
+/*
+	protected class SectionImpl implements Section {
 
 		private String id;
 		private String name;
@@ -78,6 +79,6 @@ public abstract class SiteFactory {
 
 		
 	}
-	
+	*/
 	
 }

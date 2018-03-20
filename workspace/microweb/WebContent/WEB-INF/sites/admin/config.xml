@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site name="admin">
+	<context>admin</context>
+	<properties>
+		<property name="defaultSlug" value="index.html" />
+		<property name="defaultTemplate" value="main.jsp" />
+	</properties>
+	<structure>
+		<root label="Microweb Console">
+			<security>
+				<users label="Users">
+					<update label="Add/Update User"/>
+				</users>
+				<groups>
+					<update label="Add/Update Group"/>
+				</groups>
+				<roles>
+					<update label="Add/Update Role"/>
+				</roles>
+				<accounts>
+					<update label="Add/Update Account"/>
+				</accounts>
+			</security>
+			<sites>
+				<update label="Add/Update Site"/>
+			</sites>
+		</root>
+	</structure>
+</site>

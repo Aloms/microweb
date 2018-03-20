@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sites>
+	<site name="admin" location="admin" config="config.xml">
+		<domains>
+			<domain>microweb.core</domain>
+		</domains>
+	</site>
+	<site name="prep" location="prep" config="config.xml">
+		<domains>
+			<domain primary="true">prep</domain>
+			<domain>prep2</domain>
+		</domains>
+	</site>
+</sites>

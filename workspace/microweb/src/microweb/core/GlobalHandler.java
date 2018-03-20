@@ -37,16 +37,17 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import microweb.model.Node;
+import microweb.model.Section;
 import microweb.model.Site;
 
 
 /**
  * Servlet Filter implementation class GlobalHandler
  */
-@WebFilter("/*")
+//@WebFilter("/*")
 public class GlobalHandler implements Filter {
 	
+
 	Logger logger;
 
     /**
@@ -54,6 +55,7 @@ public class GlobalHandler implements Filter {
      */
     public GlobalHandler() {
     	this.logger = Logger.getLogger(this.getClass().getPackage().getName());
+    	//logger.info("java.util.logging.config.file: " + System.getProperty("java.util.logging.config.file"));
     	
     	Util.init();
     }
@@ -77,7 +79,8 @@ public class GlobalHandler implements Filter {
 		
 		//FIXME: move creation of sitesRegistry to application initialisation
 		Map<String, String> sitesConfigurationRegistry = new ConcurrentHashMap<String, String>();
-		sitesConfigurationRegistry.put("prep", "/WEB-INF/sites/prep/config.xml");
+		sitesConfigurationRegistry.put("admin", "/WEB-INF/sites/admin");
+		sitesConfigurationRegistry.put("prep", "/WEB-INF/sites/prep");
 		//sitesConfigurationRegistry.put("lounge", "/WEB-INF/sites/lounge");
 		//sitesConfigurationRegistry.put("website2", "/WEB-INF/sites/website2");
 		
@@ -97,7 +100,7 @@ public class GlobalHandler implements Filter {
 			
 			Site site;
 			try {
-				site = XMLSiteFactory.createFromXML(absolutePath);
+				site = XMLSiteFactory.loadSite(absolutePath);
 				sitesRegistry.put(site.getName(), site);
 				logger.info("added [" + site.getName() + "] to site registry.");
 			} catch (Exception e) {
@@ -140,39 +143,36 @@ public class GlobalHandler implements Filter {
 						String siteRelativePath = staticPath.substring(siteName.length() + 1);
 						this.logger.fine("siteRelativePath:" + siteRelativePath);
 						
-						XPathFactory xPathfactory = XPathFactory.newInstance();
-						XPath xpath = xPathfactory.newXPath();
 						
-						String xpathStr = "/site/structure" + siteRelativePath;
 						
-						try {
-							logger.finest("Getting [" + site.getName() + "] site node: " + xpathStr);
-							XPathExpression expr = xpath.compile(xpathStr);
-							
-							Node node = site.getNode(expr);
-							
-							String action = request.getParameter("Action");
-							String name = request.getParameter("Name");
-							
-							if (action == null || action.equals("") || action.trim().equals("")) {
-								
-								action = "Page";
-								name = "AdminConsole";
-								
-								if (logger.isLoggable(Level.FINE)) {
-									logger.fine("action is not given, defaulting to show portal");
-								}
-							}
-							
-							Properties pageRegistry = new Properties();
-
-							pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
-							
-							
-						} catch (XPathExpressionException e) {
-							logger.severe("error is xpath expression [" + xpathStr + "]");
+						Section node = site.getSectionByURI(siteRelativePath);
+						
+						if (node != null) {
+							logger.fine("found a section handler [" + node.getName() + "] for the uri: " + siteRelativePath);
+							request.setAttribute("Action", node.getAction());
+						} else {
+							logger.fine("no section handler exists for the uri: " + siteRelativePath);
 						}
 						
+						/*
+						
+						String action = request.getParameter("Action");
+						String name = request.getParameter("Name");
+						
+						if (action == null || action.equals("") || action.trim().equals("")) {
+							
+							action = "Page";
+							name = "AdminConsole";
+							
+							if (logger.isLoggable(Level.FINE)) {
+								logger.fine("action is not given, defaulting to show portal");
+							}
+						}
+						
+						Properties pageRegistry = new Properties();
+
+						pageRegistry.put("AdminConsole", Util.TEMPLATE_PATH + "/microweb/pages/admin-console.jsp");
+						*/
 						/*
 						DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 						DocumentBuilder builder = factory.newDocumentBuilder();
@@ -188,10 +188,12 @@ public class GlobalHandler implements Filter {
 						
 						XPathExpression expr = xpath.compile("/site/structure/");
 						*/
+						
+						logger.fine("filter complete, forwading to filter chain");
 						chain.doFilter(request, response);
 						
 					} else {
-						this.logger.finer("could not find [" + site + "] in site registry");
+						throw new ServletException("could not find [" + siteName + "] in site registry.");
 					}
 				}
 			}

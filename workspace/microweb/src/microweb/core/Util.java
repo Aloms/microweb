@@ -1,5 +1,10 @@
 package microweb.core;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -8,25 +13,24 @@ public class Util {
 
 	public static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	public static final String SITES_KEY = "sites";
+	public static final String DOMAINS_KEY = "domains";
 	
 	
 	private static Logger logger = Logger.getLogger(Util.class.getPackage().getName());
 	
 	private static Properties properties = new Properties();
 	
-	private static boolean loaded;
-	
-	public static void init() {
-		init(false);
-	}
-	
-	public static void init(boolean reload) {
-		if(reload || !loaded) {
+	public static void init(URL propertiesPath) {
+
+		try (InputStream in = propertiesPath.openStream()){
+			Reader reader = new InputStreamReader(in, "UTF-8"); // for example
+			properties.load(reader);
 			
-			loaded = true;
+			logger.info("Initialised microweb properties using: " + propertiesPath.toExternalForm());
+			logger.info(properties.toString());
 			
-			properties.setProperty("microweb-context", "site");
-			properties.setProperty("controller", "Controller");
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to read core microweb properties from file: " + propertiesPath.toExternalForm(), e);
 		}
 	}
 	

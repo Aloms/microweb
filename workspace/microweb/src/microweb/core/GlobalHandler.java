@@ -57,7 +57,7 @@ public class GlobalHandler implements Filter {
     	this.logger = Logger.getLogger(this.getClass().getPackage().getName());
     	//logger.info("java.util.logging.config.file: " + System.getProperty("java.util.logging.config.file"));
     	
-    	Util.init();
+    	//Util.init();
     }
 
 	/**
@@ -100,9 +100,11 @@ public class GlobalHandler implements Filter {
 			
 			Site site;
 			try {
+				/*
 				site = XMLSiteFactory.loadSite(absolutePath);
 				sitesRegistry.put(site.getName(), site);
 				logger.info("added [" + site.getName() + "] to site registry.");
+				*/
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "Could not initialise site: " + siteKey + "(" + absolutePath + ")", e);
 			}

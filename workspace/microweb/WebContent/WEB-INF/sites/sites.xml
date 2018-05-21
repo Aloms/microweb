@@ -5,10 +5,12 @@
 			<domain>microweb.core</domain>
 		</domains>
 	</site>
+	
 	<site name="prep" location="prep" config="config.xml">
 		<domains>
-			<domain primary="true">prep</domain>
-			<domain>prep2</domain>
+			<domain name="prep.microweb.com" type="canonical"/>
+			<domain name="prep2.microweb.com" type="alias" />
+			<domain name="prep3.microweb.com" type="redirect" status="301"/>
 		</domains>
 	</site>
 </sites>

@@ -2,6 +2,7 @@ package microweb.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -45,28 +46,22 @@ public class XMLSiteFactory extends SiteFactory {
 	private static Logger logger = Logger.getLogger(XMLSiteFactory.class.getPackage().getName());
 	
 	
-	public static Site loadSite(String siteInstallation) throws Exception {
-		
-		String xmlFilename = siteInstallation + File.separator + "config.xml";
-		
-		//check if file exists
-		if (!new File(xmlFilename).exists()) {
-			throw new Exception("no configuration file could be found at: " + xmlFilename);
-		}
+	public static Site loadSite(URL siteInstallation) throws Exception {
 		
 		
-		logger.info("Initialising site from configuration file is [" + xmlFilename + "]");
+		
+		logger.info("Initialising site from configuration file is [" + siteInstallation.toExternalForm() + "]");
 		
 		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder = factory.newDocumentBuilder();
-		Document siteDom = builder.parse(xmlFilename);
+		Document siteDom = builder.parse(siteInstallation.openStream());
 		
 		XPath xPath = XPathFactory.newInstance().newXPath();
 		XPathExpression expr = xPath.compile(SITE_ROOT + "/@name");
 		String siteName = (String) expr.evaluate(siteDom, XPathConstants.STRING);
 		
-		logger.fine("Loading site [" + siteName + "] from xml configuration [" + xmlFilename + "]");
+		logger.fine("Loading site [" + siteName + "] from xml configuration [" + siteInstallation.toExternalForm() + "]");
 		
 		Site site = new Site() {
 
@@ -130,7 +125,7 @@ public class XMLSiteFactory extends SiteFactory {
 						
 						if (defaultTemplate != null && !defaultTemplate.trim().equals("")) {
 							logger.fine("creating a new page action for the site section: " + sectionName);
-							action = new PageAction(siteInstallation, TEMPLATES_FOLDER, defaultTemplate);
+							action = new PageAction(siteInstallation.toExternalForm(), TEMPLATES_FOLDER, defaultTemplate);
 							
 						} else {
 							logger.warning(node.getNodeName() + " does not have a defined action and no defaultTemplate attribute has bee set as a site property.");
@@ -155,11 +150,11 @@ public class XMLSiteFactory extends SiteFactory {
 	}
 
 	public static void main (String[] args) throws Exception {
-		Site admin = loadSite("D:\\git\\microweb\\workspace\\microweb\\WebContent\\WEB-INF\\sites\\admin");
+		//Site admin = loadSite("D:\\git\\microweb\\workspace\\microweb\\WebContent\\WEB-INF\\sites\\admin");
 		
-		Section section  = admin.getSectionByURI("/");
+		//Section section  = admin.getSectionByURI("/");
 		
-		logger.info(section.getName());
+		//logger.info(section.getName());
 		
 	}
 	

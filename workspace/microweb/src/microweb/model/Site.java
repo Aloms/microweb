@@ -1,5 +1,6 @@
 package microweb.model;
 
+import java.util.List;
 import java.util.Properties;
 
 public interface Site {
@@ -9,4 +10,5 @@ public interface Site {
 	public Properties getPageRegistry();
 	
 	public Section getSectionByURI(String uri);
+
 }

@@ -5,15 +5,23 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.ServletContext;
+
+import microweb.model.Domain;
+import microweb.model.Site;
 
 public class Util {
 
 	public static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	public static final String SITES_KEY = "sites";
 	public static final String DOMAINS_KEY = "domains";
+	
 	
 	
 	private static Logger logger = Logger.getLogger(Util.class.getPackage().getName());
@@ -82,5 +90,25 @@ public class Util {
 		
 		return false;
 		
+	}
+
+	public static Map<String, Domain> getDomainRegistry(ServletContext ctx) {
+		Map<String, Domain> domains = (Map<String, Domain>) ctx.getAttribute(DOMAINS_KEY);
+		
+		if (domains == null) {
+			domains = new ConcurrentHashMap<String, Domain>();
+			ctx.setAttribute(DOMAINS_KEY, domains);
+		}
+		return domains;
+	}
+	
+	public static Map<String, Site> getSiteRegistry(ServletContext ctx) {
+		Map<String, Site> sites = (Map<String, Site>) ctx.getAttribute(SITES_KEY);
+		
+		if (sites == null) {
+			sites = new ConcurrentHashMap<String, Site>();
+			ctx.setAttribute(SITES_KEY, sites);
+		}
+		return sites;
 	}
 }

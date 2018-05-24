@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<sites>
-	<site name="admin" location="admin" config="config.xml">
-		<domains>
-			<domain>microweb.core</domain>
-		</domains>
-	</site>
+<sites-config>
+	<sites>
+		<site location="admin" config="config.xml"/>
+		<site location="prep" config="config.xml"/>
+	</sites>
 	
-	<site name="prep" location="prep" config="config.xml">
-		<domains>
-			<domain name="prep.microweb.com" type="canonical"/>
-			<domain name="prep2.microweb.com" type="alias" />
-			<domain name="prep3.microweb.com" type="redirect" status="301"/>
-		</domains>
-	</site>
-</sites>
+	
+	<redirects>
+		<!-- global redirects -->
+		<redirect name="prep3.microweb.com" type="site" site="prep" preserveUri="true" preserveScheme="false" port="8080"/>
+		<redirect name="prep3.microweb.com" type="external" target="www.google.co.uk" preserveUri="false" preserveScheme="true" port="8080" preserveQueryString="true"/>
+	</redirects>
+</sites-config>

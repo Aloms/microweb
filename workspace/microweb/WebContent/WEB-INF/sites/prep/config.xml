@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<site name="prep">
-	<context>prep</context>
+<site name="prep" context="/prep">
 	<properties>
 		<property name="defaultSlug" value="index.html" />
 		<property name="defaultTemplate" value="main.jsp" />
 	</properties>
+	<domains>
+		<!-- definitions for the Prep website -->
+		<domain name="prep.microweb.com" isCanonical="true"/>
+		<domain name="prep2.microweb.com"/>
+	</domains>
 	<structure>
 		<node id="0" name="prep" label="Prep Home">
 			<node id="1" name="users" label="Users">
@@ -20,7 +24,7 @@
 		</node>
 	</structure>
 	<redirects>
-		<redirect uri="/friendly" redirectUri="/threads/thread/thread1" type="301"/>
-		<redirect uri="/friendly/url2"  redirectUri="/users"/>
+		<redirect from="/friendly" to="/threads/thread/thread1"/>
+		<redirect from="/friendly/url2"  to="/users"/>
 	</redirects>
 </site>

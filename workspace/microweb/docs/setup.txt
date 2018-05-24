@@ -1,0 +1,10 @@
+the following command line parameters are needed:
+
+optional, set the location of the environment specific logging properties.
+-Djava.util.logging.config.file=${workspace_loc}\microweb\WebContent\WEB-INF\classes\logging.properties 
+
+optional, set the locale language
+-Duser.language=en
+
+optional, set the locale region
+-Duser.region=GB

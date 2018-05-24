@@ -5,6 +5,10 @@
 		<property name="defaultSlug" value="index.html" />
 		<property name="defaultTemplate" value="main.jsp" />
 	</properties>
+	<domains>
+		<!-- definitions for the core microweb platform -->
+		<domain name="core.microweb.com"/>
+	</domains>
 	<structure>
 		<root label="Microweb Console">
 			<security>

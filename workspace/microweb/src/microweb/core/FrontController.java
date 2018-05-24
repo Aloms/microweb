@@ -40,6 +40,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import microweb.impl.XMLSiteFactory;
 import microweb.model.Domain;
 import microweb.model.Site;
 
@@ -50,7 +51,7 @@ import microweb.model.Site;
 public class FrontController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties"; 
+	private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties";
      
 	private Logger logger;
 	
@@ -59,7 +60,8 @@ public class FrontController extends HttpServlet {
      */
     public FrontController() {
         super();
-        this.logger = Logger.getLogger(this.getClass().getPackage().getName());
+        this.logger = Logger.getLogger("microweb.core", "messages");
+        
     }
 
 	/**
@@ -86,30 +88,33 @@ public class FrontController extends HttpServlet {
 						requestUri +       // "/people"
 						(queryString != null ? "?" + queryString : ""); // "?" + "lastname=Fox&age=30"
 		
-		logger.finest("contextPath:" + contextPath);
-		logger.finest("requestUrl:" + requestUrl);
+		StringBuffer b = new StringBuffer();
+		b.append("\n").append("contextPath:" + contextPath);
+		b.append("\n").append("requestUrl:" + requestUrl);
+		b.append("\n").append("microwebContext:" + microwebContext);
+		b.append("\n").append("controller:" + controller);
+		b.append("\n").append("scheme:" + scheme);
+		b.append("\n").append("serverName:" + serverName);
+		b.append("\n").append("serverPort:" + String.valueOf(serverPort));
+		b.append("\n").append("requestUri:" + requestUri);
+		b.append("\n").append("queryString:" + queryString);
+		b.append("\n").append("url: " + url);
 		
-		logger.finest("microwebContext:" + microwebContext);
-		logger.finest("controller:" + controller);
-		logger.finest("scheme:" + scheme);
-		logger.finest("serverName:" + serverName);
-		logger.finest("serverPort:" + String.valueOf(serverPort));
-		logger.finest("requestUri:" + requestUri);
-		logger.finest("queryString:" + queryString);
+		logger.finest(b.toString());
 		
-		logger.finest("url: " + url);
-		
-		
-		Map<String, Domain> domainRegistry = (Map<String, Domain>) getServletContext().getAttribute(Util.DOMAINS_KEY);
-		if (domainRegistry == null) {
-			logger.severe("servlet context does not have an attribute mapped to the [" + Util.DOMAINS_KEY + "] key.  This should be a " + Properties.class.getCanonicalName() + " object containing domain names mapped to " + Site.class.getCanonicalName() + " instances.");
-		} else {
-			if (domainRegistry.containsKey(serverName)) {
-				logger.finest("found hosted site for domain name: " + serverName);
-			} else {
-				logger.finest("no hosted site for domain name: " + serverName);
-				response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		Domain domain = Util.getDomainRegistry(this.getServletContext()).get(serverName);
+		if (domain != null) {
+			Site site = domain.getSite();
+			/*
+			if(domain.getType() == Domain.TYPE_REDIRECT) {
+				response.sendRedirect(requestUri);
 			}
+			*/
+			
+			logger.finest("found domain: " + domain.getName() + ", for site: " + site.getName());
+		} else {
+			logger.finest("no hosted site for domain name: " + serverName);
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 		}
 		
 		
@@ -148,19 +153,13 @@ public class FrontController extends HttpServlet {
 		}
 		
 		
-		//Map<String, URL> sitesConfigurationRegistry = new ConcurrentHashMap<String, URL>();
-		//sites contains global set of loaded sites
-		Map<String, Site> sitesRegistry = new ConcurrentHashMap<String, Site>();
-		getServletContext().setAttribute(Util.SITES_KEY, sitesRegistry);
-		
-		Map<String, Domain> domainRegistry = new ConcurrentHashMap<String, Domain>();
-		getServletContext().setAttribute(Util.DOMAINS_KEY, domainRegistry);
 		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
 		String sitesConfigPath = microwebHome + Util.getConfig().getProperty("sites-config");
 
-		String sitesXpr = "/sites/site";
+		String rootElement = "/sites-config";
+		String sitesExpr = rootElement+ "/sites/site";
 		
 		
 		try {
@@ -175,7 +174,7 @@ public class FrontController extends HttpServlet {
 			
 			XPath xPath = XPathFactory.newInstance().newXPath();
 
-			XPathExpression expr = xPath.compile(sitesXpr);
+			XPathExpression expr = xPath.compile(sitesExpr);
 			
 			
 			NodeList sites = (NodeList) expr.evaluate(siteDom.getDocumentElement(), XPathConstants.NODESET);
@@ -183,39 +182,34 @@ public class FrontController extends HttpServlet {
 		    logger.info("Printing nodes");
 		    for (int i = 0; i < sites.getLength(); i++) {
 		    	Element siteElement = (Element) sites.item(i);
-		    	String name = xPath.evaluate("@name", siteElement);
 		    	String location = xPath.evaluate("@location", siteElement);
 		    	String config = xPath.evaluate("@config", siteElement);
 
-		    	logger.info("name:" + name + ", location:" + location + ", config:" + config);
+		    	logger.info("location:" + location + ", config:" + config);
 
 		    	String siteConfigPath = microwebHome + "/" + Util.getConfig().getProperty("sites-home") + "/" + location + "/" + config;
-		    	URL siteUrl = getServletContext().getResource(siteConfigPath);
-		    	//sitesConfigurationRegistry.put(name, siteUrl);
-		    	
+		    	URL siteUrl = getServletContext().getResource(siteConfigPath);		    	
 		    	
 				try {
 					Site site = XMLSiteFactory.loadSite(siteUrl);
-					sitesRegistry.put(site.getName(), site);
-					//TODO: get all domains name put them in the Util.DOMAINS_KEY
-					logger.info("added [" + site.getName() + "] to site registry.");
 					
-					List<Domain> domains = this.getDomains(siteElement, site);
+					Util.getSiteRegistry(this.getServletContext()).put(site.getName(), site);
+					logger.log(Level.CONFIG, "core.config.loadedsite", new Object[] {site.getName()});
 					
-					for (Domain d : domains) {
-						domainRegistry.put(d.getName(), d);
+					List<Domain> domains = site.getDomains();
+					
+					for (Domain domain : domains) {
+						Util.getDomainRegistry(this.getServletContext()).put(domain.getName(), domain);
+						logger.log(Level.CONFIG, "core.config.loadeddomain", new Object[] {domain.getName(), site.getName(), domain.isCanonical() });
 					}
 					
+
 				} catch (Exception e) {
-					logger.log(Level.SEVERE, "Could not initialise site: " + name + "(" + siteUrl.toExternalForm() + ")", e);
+					logger.log(Level.SEVERE, "core.config.sitenotinitialised", new Object[] {siteUrl.toExternalForm()});
 				}
-				
-				//initialise domains and map to site
-				
-				
-				
 		    	
 		    }
+
 		    logger.info("Complete");
 			
 		} catch (ParserConfigurationException e) {
@@ -223,7 +217,7 @@ public class FrontController extends HttpServlet {
 		} catch (SAXException e) {
 			logger.log(Level.SEVERE, "Unable to parse XML file: " + sitesConfigPath, e);
 		} catch (XPathExpressionException e) {
-			logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesXpr, e);
+			logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesExpr, e);
 		} catch (MalformedURLException e) {
 			logger.log(Level.SEVERE, "Invalid location for sites configuration: " + sitesConfigPath, e);
 		} catch (IOException e) {
@@ -236,85 +230,9 @@ public class FrontController extends HttpServlet {
 		logger.info("Initialisation completed");
 	}
 	
-	private List<Domain> getDomains(Element siteElement, Site site) {
-		List<Domain> domains = new ArrayList<Domain>();
-		
-		XPath xPath = XPathFactory.newInstance().newXPath();
-		
-		try {
-			NodeList domainNodes = (NodeList) xPath.evaluate("domains/domain", siteElement, XPathConstants.NODESET);
-			
-			for (int i = 0; i < domainNodes.getLength(); i++) {
-				 Element domainElement = (Element) domainNodes.item(i);
-				 
-				 
-				 Domain domain = this.createDomain(xPath, domainElement, site);
-				 domains.add(domain);
-				 
-			}
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return domains;
-	}
+	
 
-	private Domain createDomain(XPath xPath, Element domainElement, Site site) throws XPathExpressionException {
-		 String name = xPath.evaluate("@name", domainElement);
-		 String type = xPath.evaluate("@type", domainElement);
-		 String status = xPath.evaluate("@status", domainElement);
-		 
-		 
-		 int dType = Domain.TYPE_CANONICAL;
-		 int dRedirectCode = 0;
-		 
-		 if (type != null) {
-			 if (type.trim().equals("canonical")) {
-				 dType = Domain.TYPE_CANONICAL;
-			 } else if (type.trim().equals("alias")) {
-				 dType = Domain.TYPE_ALIAS;
-			 } else if (type.trim().equals("redirect")) {
-				 dType = Domain.TYPE_REDIRECT;
-				 
-				 dRedirectCode = Integer.parseInt(status);
-			 }
-		 }
-		 
-		 int domainType = dType;
-		 int domainRedirectCode = dRedirectCode;
-		 
-		 Domain domain = new Domain() {
-
-			 private String myName = name;
-			 private int myType = domainType;
-			 private int myHttpCode = domainRedirectCode;
-			 private Site mySite = site;
-			 
-			 @Override
-			 public String getName() {
-				 return myName;
-			 }
-			
-			 @Override
-			 public int getType() {
-				 return myType;
-			 }
-			
-			 @Override
-			 public int getHttpRedirectCode() {
-				 return myHttpCode;
-			 }
-
-			@Override
-			public Site getSite() {
-				return mySite;
-			}
-			 
-		 };
-		 
-		 return domain;
-	}
+	
 
 	public static void main(String[] args) throws ParserConfigurationException, FileNotFoundException, SAXException, IOException, XPathExpressionException {
 		

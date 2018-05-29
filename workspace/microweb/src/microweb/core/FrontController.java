@@ -104,14 +104,14 @@ public class FrontController extends HttpServlet {
 		
 		Domain domain = Util.getDomainRegistry(this.getServletContext()).get(serverName);
 		if (domain != null) {
-			Site site = domain.getSite();
 			/*
 			if(domain.getType() == Domain.TYPE_REDIRECT) {
 				response.sendRedirect(requestUri);
 			}
 			*/
 			
-			logger.finest("found domain: " + domain.getName() + ", for site: " + site.getName());
+			logger.finest("found domain: " + domain.getName());
+			domain.handle(request, response);
 		} else {
 			logger.finest("no hosted site for domain name: " + serverName);
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -200,7 +200,7 @@ public class FrontController extends HttpServlet {
 					
 					for (Domain domain : domains) {
 						Util.getDomainRegistry(this.getServletContext()).put(domain.getName(), domain);
-						logger.log(Level.CONFIG, "core.config.loadeddomain", new Object[] {domain.getName(), site.getName(), domain.isCanonical() });
+						logger.log(Level.CONFIG, "core.config.loadeddomain", new Object[] {domain.getName(), site.getName() });
 					}
 					
 

@@ -1,7 +1,10 @@
 package microweb.model;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 public interface Domain {
 	public String getName();
-	public boolean isCanonical();
-	public Site getSite();
+	
+	public void handle(HttpServletRequest request, HttpServletResponse response);
 }

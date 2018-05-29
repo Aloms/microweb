@@ -1,35 +1,42 @@
 package microweb.impl;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Element;
 
+import microweb.core.AbstractDomain;
 import microweb.model.Domain;
 import microweb.model.Site;
 
-public class DomainImpl implements Domain {
+public class HostedDomain extends AbstractDomain {
 	
-	protected static Logger logger = Logger.getLogger("microweb.core", "messages");
-	
-	protected String name;
 	protected boolean canonical;
 	protected Site site;
 	
-	private DomainImpl(String name, boolean canonical, Site site) throws XPathExpressionException {
+	public boolean isCanonical() {
+		return canonical;
+	}
+
+	public Site getSite() {
+		return this.site;
+	}
+	
+	private HostedDomain(String name, boolean canonical, Site site) throws XPathExpressionException {
 		
-		this.name = name;
+		super(name);
 		this.canonical = canonical;
 		this.site = site;
 		
 		logger.log(Level.CONFIG, "site.domain.created", new Object[] {this.name, this.canonical});
 	}
 	
-	public static Domain createFromElement(Element domainElement, Site site) throws XPathExpressionException {
+	public static HostedDomain createFromElement(Element domainElement, Site site) throws XPathExpressionException {
 		XPath xPath = XPathFactory.newInstance().newXPath();
 
 		
@@ -43,20 +50,11 @@ public class DomainImpl implements Domain {
 			
 		} 
 		
-		return new DomainImpl(s_name.trim(), Boolean.parseBoolean(s_isCanonical), site);
-	}
-	
-	public String getName() {
-		return name;
-	}
-
-	
-	public boolean isCanonical() {
-		return canonical;
+		return new HostedDomain(s_name.trim(), Boolean.parseBoolean(s_isCanonical), site);
 	}
 
 	@Override
-	public Site getSite() {
-		return this.site;
+	public void handle(HttpServletRequest request, HttpServletResponse response) {
+		logger.log(Level.FINEST, "site.domain.hosted.handle", new Object[] {site.getName()});
 	}
 }

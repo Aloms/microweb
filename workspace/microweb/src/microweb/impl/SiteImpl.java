@@ -66,9 +66,9 @@ public class SiteImpl implements Site{
 		for (int i = 0; i < domainElements.getLength(); i++) {
 		    Element domainElement = (Element) domainElements.item(i);
 		    
-		    Domain domain;
+		    HostedDomain domain;
 			try {
-				domain = DomainImpl.createFromElement(domainElement, site);
+				domain = HostedDomain.createFromElement(domainElement, site);
 				
 				if (domain != null) {
 			    	site.domains.add(domain);

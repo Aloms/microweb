@@ -19,15 +19,27 @@ public abstract class AbstractDomain implements Domain {
 	protected static Logger logger = Logger.getLogger("microweb.core", "messages");
 	
 	protected String name;
+	protected Site site;
 	
 	
-	protected AbstractDomain(String name) {
+	protected AbstractDomain(String name, String siteName) {
 		this.name = name;
+		this.site = Util.getSiteRegistry().get(siteName);
+		
+		if (site == null) {
+			logger.log(Level.CONFIG, "microweb.application.config.sites-config.unrecognisedSiteName", new Object[] {siteName, this.getName()});
+		} else {
+			logger.config("Created domain handler for domain: " + this.getName() + " handling all requests to site: " + this.getSite().getName());
+		}
+		
 	}
 	
 	public String getName() {
 		return name;
 	}
+
+	public Site getSite() {
+		return this.site;
+	}
 	
-	public abstract void handle(HttpServletRequest request, HttpServletResponse response);
 }

@@ -43,7 +43,7 @@ public class XMLSiteFactory extends SiteFactory {
 	
 	private static final String TEMPLATES_FOLDER = "templates";
 	
-	private static Logger logger = Logger.getLogger(XMLSiteFactory.class.getPackage().getName());
+	private static Logger logger = Logger.getLogger("microweb.config");
 	
 	
 	public static Site loadSite(URL siteInstallation) throws Exception {

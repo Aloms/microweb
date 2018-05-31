@@ -21,18 +21,22 @@ public class Util {
 	public static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	public static final String SITES_KEY = "sites";
 	public static final String DOMAINS_KEY = "domains";
+	public static final String SITE_CANONICAL_DOMAIN_KEY = "canonicalDomains";
 	
 	
 	
 	private static Logger logger = Logger.getLogger(Util.class.getPackage().getName());
 	
 	private static Properties properties = new Properties();
+	private static ServletContext context = null;
 	
-	public static void init(URL propertiesPath) {
+	public static void init(URL propertiesPath, ServletContext servletContext) {
 
 		try (InputStream in = propertiesPath.openStream()){
 			Reader reader = new InputStreamReader(in, "UTF-8"); // for example
 			properties.load(reader);
+			
+			context = servletContext;
 			
 			logger.info("Initialised microweb properties using: " + propertiesPath.toExternalForm());
 			logger.info(properties.toString());
@@ -92,23 +96,33 @@ public class Util {
 		
 	}
 
-	public static Map<String, Domain> getDomainRegistry(ServletContext ctx) {
-		Map<String, Domain> domains = (Map<String, Domain>) ctx.getAttribute(DOMAINS_KEY);
+	public static Map<String, Domain> getDomainRegistry() {
+		Map<String, Domain> domains = (Map<String, Domain>) context.getAttribute(DOMAINS_KEY);
 		
 		if (domains == null) {
 			domains = new ConcurrentHashMap<String, Domain>();
-			ctx.setAttribute(DOMAINS_KEY, domains);
+			context.setAttribute(DOMAINS_KEY, domains);
 		}
 		return domains;
 	}
 	
-	public static Map<String, Site> getSiteRegistry(ServletContext ctx) {
-		Map<String, Site> sites = (Map<String, Site>) ctx.getAttribute(SITES_KEY);
+	public static Map<String, Site> getSiteRegistry() {
+		Map<String, Site> sites = (Map<String, Site>) context.getAttribute(SITES_KEY);
 		
 		if (sites == null) {
 			sites = new ConcurrentHashMap<String, Site>();
-			ctx.setAttribute(SITES_KEY, sites);
+			context.setAttribute(SITES_KEY, sites);
 		}
 		return sites;
+	}
+	
+	public static Map<String, Domain> getSiteCanonicalDomainsRegistry() {
+		Map<String, Domain> siteCanonicalDomains = (Map<String, Domain>) context.getAttribute(SITE_CANONICAL_DOMAIN_KEY);
+		
+		if (siteCanonicalDomains == null) {
+			siteCanonicalDomains = new ConcurrentHashMap<String, Domain>();
+			context.setAttribute(SITE_CANONICAL_DOMAIN_KEY, siteCanonicalDomains);
+		}
+		return siteCanonicalDomains;
 	}
 }

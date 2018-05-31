@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<site name="prep" context="/prep">
+<site name="prep">
 	<properties>
 		<property name="defaultSlug" value="index.html" />
 		<property name="defaultTemplate" value="main.jsp" />
 	</properties>
-	<domains>
-		<!-- definitions for the Prep website -->
-		<domain name="prep.microweb.com" isCanonical="true"/>
-		<domain name="prep2.microweb.com"/>
-	</domains>
-	<structure>
+	<main-navigation>
 		<node id="0" name="prep" label="Prep Home">
 			<node id="1" name="users" label="Users">
 				<node id="2" name="update" label="Add/Update User"/>
@@ -22,7 +17,17 @@
 				<node id="7" name="page-example.htm" content="example-content"/>
 			</node>
 		</node>
-	</structure>
+	</main-navigation>
+	<menus>
+		<menu name="left-menu">
+			<noderef id="3"/>
+			<noderef id="6"/>
+		</menu>
+		<menu name="footer">
+			<noderef id="3"/>
+			<noderef id="6"/>
+		</menu>
+	</menus>
 	<redirects>
 		<redirect from="/friendly" to="/threads/thread/thread1"/>
 		<redirect from="/friendly/url2"  to="/users"/>

@@ -83,7 +83,7 @@ public class RedirectedDomain extends AbstractDomain {
 			
 			logger.log(Level.WARNING, "microweb.application.domain.noCanonicalDomainForSite", new Object[] {this.getSite().getName(), this.getName()});
 			
-			response.sendError(500);
+			response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
 			
 		} else {
 			String url = (this.preserveScheme ? request.getScheme() : this.getScheme()) + "://"

@@ -61,6 +61,7 @@ public class FrontController extends HttpServlet {
 	private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties";
      
 	private Logger logger;
+	private Logger httpLogger;
 	
     /**
      * @see HttpServlet#HttpServlet()
@@ -68,6 +69,7 @@ public class FrontController extends HttpServlet {
     public FrontController() {
         super();
         this.logger = Logger.getLogger("microweb.core", "messages");
+        this.httpLogger = Logger.getLogger("microweb.http", "messages");
         
     }
 
@@ -111,12 +113,6 @@ public class FrontController extends HttpServlet {
 		
 		Domain domain = Util.getDomainRegistry().get(serverName);
 		if (domain != null) {
-			/*
-			if(domain.getType() == Domain.TYPE_REDIRECT) {
-				response.sendRedirect(requestUri);
-			}
-			*/
-			
 			logger.finest("found domain: " + domain.getName());
 			domain.handle(request, response);
 		} else {
@@ -125,7 +121,7 @@ public class FrontController extends HttpServlet {
 		}
 		
 		
-		
+		httpLogger.log(Level.INFO, "site.http.responseCode", new Object[] {response.getStatus(), request.getRequestURI(), request.getRequestURL()});
 		
 		
 		

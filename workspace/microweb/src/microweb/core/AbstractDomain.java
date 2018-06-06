@@ -18,6 +18,7 @@ public abstract class AbstractDomain implements Domain {
 	
 	protected static Logger logger = Logger.getLogger("microweb.core", "messages");
 	
+	
 	protected String name;
 	protected Site site;
 	

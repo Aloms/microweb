@@ -4,28 +4,28 @@
 		<property name="defaultSlug" value="index.html" />
 		<property name="defaultTemplate" value="main.jsp" />
 	</properties>
-	<main-navigation>
-		<node id="0" name="prep" label="Prep Home">
-			<node id="1" name="users" label="Users">
-				<node id="2" name="update" label="Add/Update User"/>
-			</node>
-			<node id="3" name="threads" label="Threads">
-				<node id="4" name="thread" label="Add/Update Thread"/>
-			</node>
-			<node id="5" name="test">
-				<node id="6" name="overrideTemplate" template="override.jsp"/>
-				<node id="7" name="page-example.htm" content="example-content"/>
-			</node>
-		</node>
-	</main-navigation>
+	<navigations>
+		<section id="0" label="Prep Home" site-nav="true">
+			<section id="1" slug="users" label="Users">
+				<section id="2" slug="update" label="Add/Update User"/>
+			</section>
+			<section id="3" slug="threads" label="Threads">
+				<section id="4" slug="thread" label="Add/Update Thread"/>
+			</section>
+			<section id="5" slug="test">
+				<section id="6" slug="overrideTemplate" template="override.jsp"/>
+				<section id="7" slug="page-example.htm" content="example-content"/>
+			</section>
+		</section>
+	</navigations>
 	<menus>
 		<menu name="left-menu">
-			<noderef id="3"/>
-			<noderef id="6"/>
+			<sectionref id="3"/>
+			<sectionref id="6"/>
 		</menu>
 		<menu name="footer">
-			<noderef id="3"/>
-			<noderef id="6"/>
+			<sectionref id="3"/>
+			<sectionref id="6"/>
 		</menu>
 	</menus>
 	<redirects>

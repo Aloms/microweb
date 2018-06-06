@@ -3,6 +3,8 @@ package microweb.model;
 import java.util.List;
 import java.util.Properties;
 
+import microweb.model.PageHandler;
+
 
 public interface Site {
 
@@ -12,15 +14,11 @@ public interface Site {
 	public static final int STATUS_MAINTENANCE = 4;
 	
 	public String getName();
-	
-	public String getContext();
-	
+
 	public int getStatus();
 	public void setStatus(int status);
-	/*
-	public Properties getPageRegistry();
+
 	
-	public Section getSectionByURI(String uri);
-	 */
+	public PageHandler getPageHandler(String uri);
 	
 }

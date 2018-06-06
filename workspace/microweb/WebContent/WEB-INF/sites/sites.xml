@@ -6,7 +6,7 @@
 	</sites>
 	<domains>
 		<!-- example canonical domains for all sites -->
-		<!--   <canonical name="prep.microweb.com" site="prep"/> -->
+		<canonical name="prep.microweb.com" site="prep"/>
 		<canonical name="admin.microweb.com" site="admin"/>
 		
 		<!-- example alias domain for a hosted site -->

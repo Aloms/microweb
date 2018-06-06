@@ -148,7 +148,15 @@ public class SiteImpl implements Site{
 			section = this.siteNav;
 		} else {
 			
-			String expr = uri.replaceAll("/", "/@slug=''");
+			String expr = uri.replaceAll("\\/([^\\/]+)", "/section[@slug='$1']");
+			
+			if (expr.endsWith("/")) {
+				expr = expr.substring(0, expr.length()-1);
+			}
+			
+			expr = expr.substring(1);
+			
+			logger.fine("expr: " + expr);
 			
 			try {
 				section = (Node) xPath.evaluate(expr, this.siteNav, XPathConstants.NODE);

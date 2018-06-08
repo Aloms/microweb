@@ -63,6 +63,8 @@ public class FrontController extends HttpServlet {
 	private Logger logger;
 	private Logger httpLogger;
 	
+	private boolean failedInit = false;
+	
     /**
      * @see HttpServlet#HttpServlet()
      */
@@ -88,8 +90,8 @@ public class FrontController extends HttpServlet {
 		
 		
 		
-		String microwebContext = Util.getConfig().getProperty("microweb-context");
-		String controller = Util.getConfig().getProperty("controller");
+		//String microwebContext = Util.getApplicationConfig().getProperty("microweb-context");
+		//String controller = Util.getApplicationConfig().getProperty("controller");
 		
 		String url = 	scheme + "://" +   // "http" + "://
 						serverName +       // "myhost"
@@ -100,8 +102,8 @@ public class FrontController extends HttpServlet {
 		StringBuffer b = new StringBuffer();
 		b.append("\n").append("contextPath:" + contextPath);
 		b.append("\n").append("requestUrl:" + requestUrl);
-		b.append("\n").append("microwebContext:" + microwebContext);
-		b.append("\n").append("controller:" + controller);
+		//b.append("\n").append("microwebContext:" + microwebContext);
+		//b.append("\n").append("controller:" + controller);
 		b.append("\n").append("scheme:" + scheme);
 		b.append("\n").append("serverName:" + serverName);
 		b.append("\n").append("serverPort:" + String.valueOf(serverPort));
@@ -111,22 +113,22 @@ public class FrontController extends HttpServlet {
 		
 		logger.finest(b.toString());
 		
-		Domain domain = Util.getDomainRegistry().get(serverName);
-		if (domain != null) {
-			logger.finest("found domain: " + domain.getName());
-			domain.handle(request, response);
+		if (failedInit) {
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		} else {
-			logger.finest("no hosted site for domain name: " + serverName);
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			Domain domain = Util.getDomainRegistry().get(serverName);
+			if (domain != null) {
+				logger.finest("found domain: " + domain.getName());
+				domain.handle(request, response);
+			} else {
+				logger.finest("no hosted site for domain name: " + serverName);
+				response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			}
 		}
-		
-		
+
 		httpLogger.log(Level.INFO, "site.http.responseCode", new Object[] {response.getStatus(), request.getRequestURI(), request.getRequestURL()});
-		
-		
-		
-		
-		response.getWriter().append("Served at: ").append(request.getContextPath());
+
+		//response.getWriter().append("Served at: ").append(request.getContextPath());
 	}
 
 	/**
@@ -142,36 +144,41 @@ public class FrontController extends HttpServlet {
 		logger.info("Initialising " + this.getClass().getName() +  " Servlet");
 		
 		String microwebHome = "/WEB-INF/";
-		String propPathStr = microwebHome + MICROWEB_PROPERTIES_FILE;
-		
-		
-		//Properties props = new Properties();
-		
+
+			
 		try {
-			URL propertiesPath = getServletContext().getResource(propPathStr);
-			//URL url = new URL("url");
-			Util.init(propertiesPath, getServletContext());
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Unable to initialise Microweb Core from properties file: " + propPathStr, e);
+			URL microwebProperties = getServletContext().getResource(this.getServletContext().getInitParameter("microweb-properties"));
+			URL systemProperties = getServletContext().getResource(this.getServletContext().getInitParameter("system-properties"));
+			
+			Util.init(microwebProperties, systemProperties, getServletContext());
+			
+			
+			
+		} catch (MalformedURLException e1) {
+			this.failedInit = true;
 		}
-		
-		
-		
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-		String sitesConfigPath = microwebHome + Util.getConfig().getProperty("sites-config");
+			
 
-		String rootElement = "/sites-config";
-		String sitesExpr = rootElement+ "/sites/site";
-		
-		
-		
-		try {
+		if (!this.failedInit) {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+			String sitesConfigPath = microwebHome + Util.getApplicationProperty("sites-config");
+			String sitesConfigXsd = microwebHome + Util.getSystemProperty("sitesConfigXsd");
 			
-			URL sitesResourcePath = getServletContext().getResource(sitesConfigPath);
-			logger.fine("loading sites configuration from: " + sitesResourcePath.toExternalForm());
+			String rootElement = "/sites-config";
+			String sitesExpr = rootElement + "/sites/site";
+			//String sitesConfigXsd = microwebHome + "/config/sites-config.xsd";
 			
-			if (this.validateSitesConfig(sitesResourcePath)) {
+			
+			try {
+				
+				URL sitesResourcePath = getServletContext().getResource(sitesConfigPath);
+				logger.fine("loading sites configuration from: " + sitesResourcePath.toExternalForm());
+				
+				
+				Util.validateXML(sitesResourcePath, getServletContext().getResource(sitesConfigXsd));
+				
 				DocumentBuilder builder = factory.newDocumentBuilder();
 				
 				Document siteDom = builder.parse(sitesResourcePath.openStream());
@@ -183,26 +190,25 @@ public class FrontController extends HttpServlet {
 				checkCanonicals();
 				
 			    logger.info("Complete");
-			} else {
-				logger.log(Level.SEVERE, "microweb.application.config.sites-config.invalid", new Object[] {sitesResourcePath.toExternalForm()});
-			}
-			
-			
-		    
-			
-		} catch (ParserConfigurationException e) {
-			logger.log(Level.SEVERE, "Unable to W3C DOM Parser", e);
-		} catch (SAXException e) {
-			logger.log(Level.SEVERE, "Unable to parse XML file: " + sitesConfigPath, e);
-		} catch (XPathExpressionException e) {
-			logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesExpr, e);
-		} catch (MalformedURLException e) {
-			logger.log(Level.SEVERE, "Invalid location for sites configuration: " + sitesConfigPath, e);
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, "Unable to read XML file: " + sitesConfigPath, e);
-		} 
+				 
+				
+			} catch (ParserConfigurationException e) {
+				logger.log(Level.SEVERE, "Unable to W3C DOM Parser", e);
+			} catch (SAXException e) {
+				logger.log(Level.SEVERE, "microweb.application.config.sites-config.invalid", new Object[] {sitesConfigPath});
+			} catch (XPathExpressionException e) {
+				logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesExpr, e);
+			} catch (MalformedURLException e) {
+				logger.log(Level.SEVERE, "Invalid location for sites configuration: " + sitesConfigPath, e);
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Unable to read XML file: " + sitesConfigPath, e);
+			} 
 
-		logger.info("Initialisation completed");
+			logger.info("Initialisation completed");
+		} else {
+			logger.log(Level.SEVERE, "microweb.application.initialisationFailed", new Object[] {});
+		}
+
 	}
 
 
@@ -237,15 +243,6 @@ public class FrontController extends HttpServlet {
 		}
 	}
 
-	private boolean validateSitesConfig(URL sitesResourcePath) throws SAXException, IOException {
-		InputStream xsdFile = this.getClass().getResourceAsStream("sites-config.xsd");
-		SchemaFactory factory =  SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-        Schema schema = factory.newSchema(new StreamSource(xsdFile));
-        Validator validator = schema.newValidator();
-        validator.validate(new StreamSource(sitesResourcePath.openStream()));
-        return true;
-	}
-
 	private void loadSites(String microwebHome, String sitesExpr, Document siteDom)	throws XPathExpressionException, MalformedURLException {
 		XPath xPath = XPathFactory.newInstance().newXPath();
 
@@ -262,18 +259,22 @@ public class FrontController extends HttpServlet {
 
 			logger.info("location:" + location + ", config:" + config);
 
-			String siteConfigPath = microwebHome + "/" + Util.getConfig().getProperty("sites-home") + "/" + location + "/" + config;
-			URL siteUrl = getServletContext().getResource(siteConfigPath);		    	
+			String siteConfigPath = microwebHome + "/" + Util.getApplicationProperty("sites-home") + "/" + location + "/" + config;
 			
+			URL siteUrl = getServletContext().getResource(siteConfigPath);		    	
+			URL xsd = getServletContext().getResource(microwebHome + Util.getSystemProperty("siteXsd"));
 			try {
+				Util.validateXML(siteUrl, xsd);
+				
 				Site site = XMLSiteFactory.loadSite(siteUrl);
 				
 				Util.getSiteRegistry().put(site.getName(), site);
-				logger.log(Level.CONFIG, "core.config.loadedsite", new Object[] {site.getName()});
+				logger.log(Level.CONFIG, "microweb.application.config.site.loaded", new Object[] {site.getName()});
 
 
 			} catch (Exception e) {
-				logger.log(Level.SEVERE, "core.config.sitenotinitialised", new Object[] {siteUrl.toExternalForm()});
+				logger.log(Level.SEVERE, "microweb.application.config.site.invalid", new Object[] {siteUrl.toExternalForm()});
+				logger.log(Level.SEVERE, e.getMessage(), e);
 			}
 			
 		}

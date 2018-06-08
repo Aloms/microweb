@@ -39,28 +39,21 @@ public class SiteImpl implements Site{
 	protected NodeList navigations;
 	protected Element siteNav;
 	
+	protected Element siteElement;
+	
 
 	private static XPath xPath = XPathFactory.newInstance().newXPath();
 	
-	private SiteImpl() {
-		
+	private SiteImpl(Element siteElement) {
+		this.siteElement = siteElement;
 	}
 	
 	public static Site createFromElement(Element siteElement) throws XPathExpressionException {
 		
-		
 		String s_name = xPath.evaluate(SITE_ROOT + "/@name", siteElement);
 		String s_context = xPath.evaluate(SITE_ROOT + "/@context", siteElement);
-		
-		if (s_name == null || s_name.trim().equals("")) {
-			
-			logger.log(Level.WARNING, "site.name.missingorempty", new Object[] {s_name});
-			return null;
-			
-		}
 
-
-		SiteImpl site = new SiteImpl();
+		SiteImpl site = new SiteImpl(siteElement);
 		site.setName(s_name);
 		site.setContext(s_context);
 		
@@ -175,17 +168,30 @@ public class SiteImpl implements Site{
 			};
 		} else {
 			
-			String s_id = null;
-			String s_label = null;
-			String s_slug = null;
 			
 		
 			try {
-				s_id = xPath.evaluate("@id", section);
-				s_label = xPath.evaluate("@label", section);
-				s_slug = xPath.evaluate("@slug", section);
+				String s_id = xPath.evaluate("@id", section);
+				String s_label = xPath.evaluate("@label", section);
+				String s_slug = xPath.evaluate("@slug", section);
+				String s_page = xPath.evaluate("@page", section);
+				
+				if (s_page == null || s_page.equals("")) {
+					
+				}
 				
 				logger.finest("section with id: " + s_id + " will handle uri: " + uri);
+				
+				return (HttpServletRequest request, HttpServletResponse response) -> {
+					
+
+					response.getWriter().println("s_id: " + s_id);
+					response.getWriter().println("s_label: " + s_label);
+					response.getWriter().println("s_slug: " + s_slug);
+					response.getWriter().println("s_page: " + s_page);
+					
+					
+				};
 				
 			} catch (XPathExpressionException e) {
 				logger.log(Level.SEVERE, "failed to read node attribute(s)", e);
@@ -194,19 +200,7 @@ public class SiteImpl implements Site{
 				};
 			}
 			
-			String out_id = s_id;
-			String out_label = s_label;
-			String out_slug = s_slug;
 			
-			return (HttpServletRequest request, HttpServletResponse response) -> {
-				
-
-				response.getWriter().println("out_id: " + out_id);
-				response.getWriter().println("out_label: " + out_label);
-				response.getWriter().println("out_slug: " + out_slug);
-				
-				
-			};
 			
 		}
 		

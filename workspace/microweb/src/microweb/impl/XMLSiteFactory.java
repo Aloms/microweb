@@ -32,6 +32,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import microweb.core.SiteFactory;
+import microweb.core.Util;
 import microweb.model.Domain;
 import microweb.model.Site;
 
@@ -47,20 +48,12 @@ public class XMLSiteFactory extends SiteFactory {
 	
 	
 	public static Site loadSite(URL siteInstallation) throws Exception {
-		
-		
+
 		
 		logger.info("Initialising site from configuration file is [" + siteInstallation.toExternalForm() + "]");
-		
-		
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		Document siteDom = builder.parse(siteInstallation.openStream());
-		
-		Site site = SiteImpl.createFromElement(siteDom.getDocumentElement());
-		
-		return site;
 
+		return SiteImpl.createFromElement(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(siteInstallation.openStream()).getDocumentElement());
+		
 	}
 
 	/*

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
@@ -12,6 +13,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.ServletContext;
+import javax.xml.XMLConstants;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
+
+import org.xml.sax.SAXException;
 
 import microweb.model.Domain;
 import microweb.model.Site;
@@ -27,39 +35,57 @@ public class Util {
 	
 	private static Logger logger = Logger.getLogger(Util.class.getPackage().getName());
 	
-	private static Properties properties = new Properties();
+	private static Properties applicationProperties = new Properties();
+	private static Properties systemProperties = new Properties();
+	
 	private static ServletContext context = null;
 	
-	public static void init(URL propertiesPath, ServletContext servletContext) {
+	public static void init(URL microwebPropertiesPath, URL systemPropertiesPath, ServletContext servletContext) {
 
-		try (InputStream in = propertiesPath.openStream()){
+		context = servletContext;
+		
+		applicationProperties = readProperties(microwebPropertiesPath);
+		systemProperties = readProperties(systemPropertiesPath);
+		
+		
+	}
+	
+	private static Properties readProperties(URL url) {
+
+		try (InputStream in = url.openStream()){
 			Reader reader = new InputStreamReader(in, "UTF-8"); // for example
-			properties.load(reader);
+			Properties props = new Properties();
+			props.load(reader);
 			
-			context = servletContext;
+			logger.info("Initialised properties using: " + url.toExternalForm());
 			
-			logger.info("Initialised microweb properties using: " + propertiesPath.toExternalForm());
-			logger.info(properties.toString());
+			return props;
 			
 		} catch (IOException e) {
-			logger.log(Level.SEVERE, "Unable to read core microweb properties from file: " + propertiesPath.toExternalForm(), e);
+			logger.log(Level.SEVERE, "microweb.application.config.initialisationFailed", new Object[] {url.toExternalForm()});
 		}
+		
+		return null;
 	}
 	
-	public static Properties getConfig() {
-		return properties;
+	public static String getApplicationProperty(String key) {
+		return applicationProperties.getProperty(key);
 	}
 	
+	public static String getSystemProperty(String key) {
+		return systemProperties.getProperty(key);
+	}
+	/*
 	public static String getMicrowebPath() {
-		return "/" + Util.getConfig().getProperty("microweb-context");
+		return "/" + Util.getApplicationConfig().getProperty("microweb-context");
 	}
 	
 	public static String getControllerPath() {
-		return getMicrowebPath() + "/" + Util.getConfig().getProperty("controller");
+		return getMicrowebPath() + "/" + Util.getApplicationConfig().getProperty("controller");
 	}
+	*/
 	
-	
-	
+	/*
 	public static boolean isController(String path) {
 		
 		if (path == null || path.equals("") || path.trim().equals("")) {
@@ -80,7 +106,9 @@ public class Util {
 		return false;
 		
 	}
+	*/
 	
+	/*
 	public static boolean isMicrowebRoot(String path) {
 		
 		if (path == null || path.equals("") || path.trim().equals("")) {
@@ -95,6 +123,7 @@ public class Util {
 		return false;
 		
 	}
+	*/
 
 	public static Map<String, Domain> getDomainRegistry() {
 		Map<String, Domain> domains = (Map<String, Domain>) context.getAttribute(DOMAINS_KEY);
@@ -124,5 +153,22 @@ public class Util {
 			context.setAttribute(SITE_CANONICAL_DOMAIN_KEY, siteCanonicalDomains);
 		}
 		return siteCanonicalDomains;
+	}
+	
+	public static void validateXML(URL xmlPath, URL xsdPath) throws SAXException, IOException {
+		
+		if (xmlPath == null) {
+			throw new RuntimeException("No url given for xmlPath, failed to validate xml.");
+		}
+		
+		if (xsdPath == null) {
+			throw new RuntimeException("No url given for xsdpath, failed to validate xml: " + xmlPath.toExternalForm());
+		}
+		
+		InputStream xsdFile = xsdPath.openStream(); 
+		SchemaFactory factory =  SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        Schema schema = factory.newSchema(new StreamSource(xsdFile));
+        Validator validator = schema.newValidator();
+        validator.validate(new StreamSource(xmlPath.openStream()));
 	}
 }

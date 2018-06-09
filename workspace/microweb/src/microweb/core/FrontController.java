@@ -58,7 +58,7 @@ import microweb.model.Site;
 public class FrontController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties";
+	//private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties";
      
 	private Logger logger;
 	private Logger httpLogger;
@@ -279,62 +279,5 @@ public class FrontController extends HttpServlet {
 	}
 	
 
-	
-
-	public static void main(String[] args) throws ParserConfigurationException, FileNotFoundException, SAXException, IOException, XPathExpressionException {
-		
-		Logger logger = Logger.getLogger(FrontController.class.getPackage().getName());
-		
-		/*
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-		String sitesConfigPath = "D:/git/microweb/bin/apache-tomcat-8.5.27-windows-x64/apache-tomcat-8.5.27/wtpwebapps/microweb/WEB-INF/sites/sites.xml";
-
-		String sitesXpr = "/sites/site";
-		
-		DocumentBuilder builder = factory.newDocumentBuilder();
-
-		
-		Document siteDom = builder.parse(new FileInputStream(sitesConfigPath));
-		
-		//logger.info(siteDom.getDocumentElement().getTextContent());
-		XPath xPath = XPathFactory.newInstance().newXPath();
-
-		XPathExpression expr = xPath.compile(sitesXpr);
-		
-		
-		NodeList sites = (NodeList) expr.evaluate(siteDom.getDocumentElement(), XPathConstants.NODESET);
-		
-		logger.info("Printing nodes");
-		for (int i = 0; i < sites.getLength(); i++) {
-			Node siteNode = sites.item(i);
-			logger.info(siteNode.getNodeName() + ":" + siteNode.getNodeName());
-			//logger.info(siteNode.getTextContent());
-		}
-		logger.info("Complete");
-		*/
-		
-		XPathFactory factory = XPathFactory.newInstance();
-	    XPath xPath = factory.newXPath();
-
-	   
-	    
-	    NodeList sites = (NodeList) xPath.evaluate("/sites/site", new InputSource(new FileReader(
-	        "D:/git/microweb/bin/apache-tomcat-8.5.27-windows-x64/apache-tomcat-8.5.27/wtpwebapps/microweb/WEB-INF/sites/sites.xml")), XPathConstants.NODESET);
-	    
-	    logger.info("Printing nodes");
-	    for (int i = 0; i < sites.getLength(); i++) {
-	      Element site = (Element) sites.item(i);
-	      String name = xPath.evaluate("@name", site);
-	      String location = xPath.evaluate("@location", site);
-	      String config = xPath.evaluate("@config", site);
-	      
-	      logger.info("name:" + name + ", location:" + location + ", config:" + config);
-
-	    }
-	    logger.info("Complete");
-	}
-	
-	
 
 }

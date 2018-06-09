@@ -3,7 +3,20 @@
 	<properties>
 		<property name="defaultTemplate" value="pages/landing-page.jsp" />
 	</properties>
-
+	<domains>
+		<!-- example canonical domains for all sites -->
+		<domain name="prep.microweb.com" type="canonical"/>
+		<!-- <canonical name="admin.microweb.com" site="admin"/>  -->
+		
+		<!-- example alias domain for a hosted site -->
+		<domain name="prep2.microweb.com" type="alias"/>
+		
+		<!-- example alias domain for a hosted site -->
+		<domain name="prep2.microweb.com" type="alias"/>
+		
+		<!-- example redirection for a hosted site -->
+		<domain name="prep3.microweb.com" type="redirect" scheme="preserve" port="preserve" uri="preserve" queryString="preserve"/>
+	</domains>
 	<navigations>
 		<section id="0" label="Prep Home" slug="" site-nav="true" page="pages/home.jsp">
 			<section id="1" slug="users" label="Users">

@@ -28,7 +28,7 @@ public class RedirectedDomain extends AbstractDomain {
 	
 	
 	
-	protected RedirectedDomain(String name, String site, String scheme, String port, String uri, String queryString) throws XPathExpressionException {
+	protected RedirectedDomain(String name, Site site, String scheme, String port, String uri, String queryString) throws XPathExpressionException {
 		super(name, site);
 		
 		if (PRESERVE.equals(scheme)) {
@@ -77,28 +77,16 @@ public class RedirectedDomain extends AbstractDomain {
 	@Override
 	public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		
-		Domain canonicalDomain = Util.getSiteCanonicalDomainsRegistry().get(this.getSite().getName());
+		String url = (this.preserveScheme ? request.getScheme() : this.getScheme()) + "://"
+				+ this.getSite().getCanonicalDomain().getName()
+				+ (this.preservePort ? ":" + String.valueOf(request.getServerPort()) : (this.port == 80 ? "" : ":" + String.valueOf(this.port)))
+				+ (this.preserveUri ? ("/".equals(request.getRequestURI()) ? "" : request.getRequestURI()) : this.getUri())
+				+ (this.preserveQueryString ? (request.getQueryString() != null ? request.getQueryString() : "") : this.getQueryString());
 		
-		if (canonicalDomain == null) {
-			
-			logger.log(Level.WARNING, "microweb.application.domain.noCanonicalDomainForSite", new Object[] {this.getSite().getName(), this.getName()});
-			
-			response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
-			
-		} else {
-			String url = (this.preserveScheme ? request.getScheme() : this.getScheme()) + "://"
-					+ Util.getSiteCanonicalDomainsRegistry().get(this.getSite().getName()).getName()
-					+ (this.preservePort ? ":" + String.valueOf(request.getServerPort()) : (this.port == 80 ? "" : ":" + String.valueOf(this.port)))
-					+ (this.preserveUri ? ("/".equals(request.getRequestURI()) ? "" : request.getRequestURI()) : this.getUri())
-					+ (this.preserveQueryString ? (request.getQueryString() != null ? request.getQueryString() : "") : this.getQueryString());
-			
+		if (logger.isLoggable(Level.FINER)) {
 			logger.finest(this.getClass().getCanonicalName() + " is redirecting to: " + url);
-			response.sendRedirect(url);
 		}
-		
-		
-				
-		
+		response.sendRedirect(url);
 	}
 	
 	

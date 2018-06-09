@@ -86,9 +86,11 @@ public class Util {
 		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
 	}
 	
+	/*
 	public static Map<String, Domain> getSiteCanonicalDomainsRegistry() {
 		return (Map) createAndStore(SITE_CANONICAL_DOMAIN_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
 	}
+	*/
 	
 	private static Object createAndStore(String key, ObjectFactory factory) {
 		Object o = (Object) context.getAttribute(key);

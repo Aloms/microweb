@@ -17,45 +17,11 @@
                                     </xs:sequence>
                               </xs:complexType>
                         </xs:element>
-                        <xs:element name="domains">
-                              <xs:complexType>
-                                    <xs:choice maxOccurs="unbounded">
-                                    	<xs:element name="canonical" type="domainType" maxOccurs="unbounded"/>
-                                    	<xs:element name="alias" type="domainType" maxOccurs="unbounded"/>
-                                        <xs:element name="redirect" type="redirectType" maxOccurs="unbounded"/>
-                                    </xs:choice>
-                              </xs:complexType>
-                        </xs:element>
+
                   </xs:sequence>
             </xs:complexType>
       </xs:element>
 
-	  <xs:complexType name="domainType">
-			<xs:attribute name="name">
-				<xs:simpleType>
-			        <xs:restriction base="xs:string">
-			            <xs:minLength value="1"/>
-			        </xs:restriction>
-			    </xs:simpleType>
-			</xs:attribute>
-        	<xs:attribute name="site">
-        		<xs:simpleType>
-			        <xs:restriction base="xs:string">
-			            <xs:minLength value="1"/>
-			        </xs:restriction>
-			    </xs:simpleType>
-        	</xs:attribute>
-	  </xs:complexType>
-	  
-	  <xs:complexType name="redirectType">
-		  	<xs:complexContent>
-			  	  <xs:extension base="domainType">
-				  	  	<xs:attribute name="scheme" type="xs:string"></xs:attribute>
-				  	  	<xs:attribute name="port" type="xs:string"></xs:attribute>
-				  	  	<xs:attribute name="uri" type="xs:string"></xs:attribute>
-				  	  	<xs:attribute name="queryString" type="xs:string"></xs:attribute>
-			  	  </xs:extension>
-		  	</xs:complexContent>
-	  </xs:complexType>
+	 
 
 </xs:schema>

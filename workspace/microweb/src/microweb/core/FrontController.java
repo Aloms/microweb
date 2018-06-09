@@ -183,9 +183,9 @@ public class FrontController extends HttpServlet {
 				
 				loadSites(microwebHome, sitesExpr, siteDom);
 				
-				loadDomains(rootElement, siteDom);
-				
 				checkCanonicals();
+				
+				registerDomains();
 				
 			    logger.info("Complete");
 				 
@@ -211,35 +211,39 @@ public class FrontController extends HttpServlet {
 
 
 
+	private void registerDomains() {
+		Collection<Site> sites =  Util.getSiteRegistry().values();
+		
+		for (Site site : sites) {
+			
+			Collection<Domain> domains = site.getDomains();
+			
+			for (Domain domain : domains) {
+				Domain existingDomain = Util.getDomainRegistry().putIfAbsent(domain.getName(), domain);
+				
+				if (existingDomain != null) {
+					logger.log(Level.WARNING, "microweb.application.config.sites-config.duplicatedDomains", new Object[] {domain.getName()});
+				}
+			}
+		}
+	}
+
 	private void checkCanonicals() {
 		Collection<Site> sites =  Util.getSiteRegistry().values();
 		
 		for (Site site : sites) {
-			Domain domain = Util.getSiteCanonicalDomainsRegistry().get(site.getName());
 			
-			if (domain == null) {
+			if (site.getCanonicalDomain() == null) {
 				logger.log(Level.WARNING, "microweb.application.config.sites-config.noCanonicalDomainForSite", new Object[] {site.getName()});
 				site.setStatus(Site.STATUS_INVALID);
 			} else {
-				logger.config(domain.getName() + " is the canonical name for the " + site.getName() + " site.");
+				logger.config(site.getCanonicalDomain().getName() + " is the canonical name for the " + site.getName() + " site.");
 				site.setStatus(Site.STATUS_ONLINE);
 			}
 		}
 	}
 
-	private void loadDomains(String rootElement, Document siteDom) throws XPathExpressionException {
-		XPath xPath = XPathFactory.newInstance().newXPath();
-		XPathExpression expr = xPath.compile(rootElement + "/domains/*");
-		
-		NodeList domainElements = (NodeList) expr.evaluate(siteDom, XPathConstants.NODESET);
 
-		
-		for (int i = 0; i < domainElements.getLength(); i++) {
-		    Element domainElement = (Element) domainElements.item(i);
-		    
-		    XMLDomainFactory.createAndRegister(domainElement);
-		}
-	}
 
 	private void loadSites(String microwebHome, String sitesExpr, Document siteDom)	throws XPathExpressionException, MalformedURLException {
 		XPath xPath = XPathFactory.newInstance().newXPath();
@@ -249,7 +253,6 @@ public class FrontController extends HttpServlet {
 		
 		NodeList sites = (NodeList) expr.evaluate(siteDom.getDocumentElement(), XPathConstants.NODESET);
 		
-		logger.info("Printing nodes");
 		for (int i = 0; i < sites.getLength(); i++) {
 			Element siteElement = (Element) sites.item(i);
 			String location = xPath.evaluate("@location", siteElement);
@@ -261,19 +264,39 @@ public class FrontController extends HttpServlet {
 			
 			URL siteUrl = getServletContext().getResource(siteConfigPath);		    	
 			URL xsd = getServletContext().getResource(microwebHome + Util.getSystemProperty("siteXsd"));
+			
+			boolean isValid = false;
 			try {
 				Util.validateXML(siteUrl, xsd);
+				isValid = true;
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "microweb.application.config.site.invalid", new Object[] {siteUrl.toExternalForm()});
+				logger.log(Level.SEVERE, "XSD validation error", e);
+			}
+			
+			//try {
 				
-				Site site = XMLSiteFactory.loadSite(siteUrl);
+			if(isValid) {
+				Site site;
+				try {
+					site = XMLSiteFactory.loadSite(siteUrl);
+					
+					Util.getSiteRegistry().put(site.getName(), site);
+					logger.log(Level.CONFIG, "microweb.application.config.site.loaded", new Object[] {site.getName()});
+				} catch (Exception e) {
+					logger.log(Level.SEVERE, "microweb.application.config.site.invalid", new Object[] {siteUrl.toExternalForm()});
+					logger.log(Level.SEVERE, "Fail to instantiate site", e);
+				}
+			}
 				
-				Util.getSiteRegistry().put(site.getName(), site);
-				logger.log(Level.CONFIG, "microweb.application.config.site.loaded", new Object[] {site.getName()});
+				
 
-
+			/*
 			} catch (Exception e) {
 				logger.log(Level.SEVERE, "microweb.application.config.site.invalid", new Object[] {siteUrl.toExternalForm()});
 				logger.log(Level.SEVERE, e.getMessage(), e);
 			}
+			*/
 			
 		}
 	}

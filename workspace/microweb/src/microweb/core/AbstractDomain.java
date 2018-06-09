@@ -17,22 +17,14 @@ import microweb.model.Site;
 public abstract class AbstractDomain implements Domain {
 	
 	protected static Logger logger = Logger.getLogger("microweb.core", "messages");
-	
-	
+
 	protected String name;
 	protected Site site;
 	
 	
-	protected AbstractDomain(String name, String siteName) {
+	protected AbstractDomain(String name, Site site) {
 		this.name = name;
-		this.site = Util.getSiteRegistry().get(siteName);
-		
-		if (site == null) {
-			logger.log(Level.CONFIG, "microweb.application.config.sites-config.unrecognisedSiteName", new Object[] {siteName, this.getName()});
-		} else {
-			logger.config("Created domain handler for domain: " + this.getName() + " handling all requests to site: " + this.getSite().getName());
-		}
-		
+		this.site = site;
 	}
 	
 	public String getName() {

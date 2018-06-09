@@ -1,5 +1,6 @@
 package microweb.model;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
@@ -17,6 +18,9 @@ public interface Site {
 
 	public int getStatus();
 	public void setStatus(int status);
+	
+	public Domain getCanonicalDomain();
+	public Collection getDomains();
 
 	
 	public PageHandler getPageHandler(String uri);

@@ -7,13 +7,29 @@
 	
     
 	<xs:complexType name="site">
-		<xs:sequence>
-			<xs:element name="properties" type="properties"></xs:element>
-			<xs:element name="navigations" type="navigations"></xs:element>
-		</xs:sequence>
+		<xs:all>
+			<xs:element name="properties" type="properties" maxOccurs="1" minOccurs="0"></xs:element>
+			<xs:element name="navigations" type="navigations" maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="domains" type="domains" maxOccurs="1" minOccurs="1"></xs:element>
+		</xs:all>
 		<xs:attribute ref="name" use="required"></xs:attribute>
 	</xs:complexType>
 
+ 		<xs:complexType name="domain">
+			<xs:attribute name="name" type="xs:string" use="required"></xs:attribute>
+			<xs:attribute name="type" type="domainType" use="required"></xs:attribute>
+			<xs:attribute name="scheme" type="xs:string"></xs:attribute>
+	  	  	<xs:attribute name="port" type="xs:string"></xs:attribute>
+	  	  	<xs:attribute name="uri" type="xs:string"></xs:attribute>
+	  	  	<xs:attribute name="queryString" type="xs:string"></xs:attribute>
+	  </xs:complexType>
+
+	<xs:complexType name="domains">
+		<xs:choice maxOccurs="unbounded">
+			<xs:element name="domain" type="domain" maxOccurs="unbounded" minOccurs="1"/>
+		</xs:choice>
+	</xs:complexType>
+                              
 	<xs:complexType name="properties">
     	<xs:sequence>
     		<xs:element name="property" type="property" maxOccurs="unbounded" minOccurs="0"></xs:element>
@@ -45,7 +61,13 @@
     <xs:attribute name="page" type="xs:string"></xs:attribute>
 
 
-
+	<xs:simpleType name="domainType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="canonical" />
+			<xs:enumeration value="alias" />
+			<xs:enumeration value="redirect" />
+		</xs:restriction>
+	</xs:simpleType>
 
 
     <xs:complexType name="navigations">

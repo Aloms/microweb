@@ -88,30 +88,28 @@ public class FrontController extends HttpServlet {
 		int serverPort = request.getServerPort();
 		String queryString = request.getQueryString();
 		
+		if (logger.isLoggable(Level.FINER)) {
+			String url = 	scheme + "://" +   // "http" + "://
+					serverName +       // "myhost"
+					":" + serverPort + // ":" + "8080"
+					requestUri +       // "/people"
+					(queryString != null ? "?" + queryString : ""); // "?" + "lastname=Fox&age=30"
+	
+			StringBuffer b = new StringBuffer();
+			b.append("\n").append("contextPath:" + contextPath);
+			b.append("\n").append("requestUrl:" + requestUrl);
+			//b.append("\n").append("microwebContext:" + microwebContext);
+			//b.append("\n").append("controller:" + controller);
+			b.append("\n").append("scheme:" + scheme);
+			b.append("\n").append("serverName:" + serverName);
+			b.append("\n").append("serverPort:" + String.valueOf(serverPort));
+			b.append("\n").append("requestUri:" + requestUri);
+			b.append("\n").append("queryString:" + queryString);
+			b.append("\n").append("url: " + url);
+			
+			logger.finer(b.toString());
+		}
 		
-		
-		//String microwebContext = Util.getApplicationConfig().getProperty("microweb-context");
-		//String controller = Util.getApplicationConfig().getProperty("controller");
-		
-		String url = 	scheme + "://" +   // "http" + "://
-						serverName +       // "myhost"
-						":" + serverPort + // ":" + "8080"
-						requestUri +       // "/people"
-						(queryString != null ? "?" + queryString : ""); // "?" + "lastname=Fox&age=30"
-		
-		StringBuffer b = new StringBuffer();
-		b.append("\n").append("contextPath:" + contextPath);
-		b.append("\n").append("requestUrl:" + requestUrl);
-		//b.append("\n").append("microwebContext:" + microwebContext);
-		//b.append("\n").append("controller:" + controller);
-		b.append("\n").append("scheme:" + scheme);
-		b.append("\n").append("serverName:" + serverName);
-		b.append("\n").append("serverPort:" + String.valueOf(serverPort));
-		b.append("\n").append("requestUri:" + requestUri);
-		b.append("\n").append("queryString:" + queryString);
-		b.append("\n").append("url: " + url);
-		
-		logger.finest(b.toString());
 		
 		if (failedInit) {
 			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -126,9 +124,9 @@ public class FrontController extends HttpServlet {
 			}
 		}
 
-		httpLogger.log(Level.INFO, "site.http.responseCode", new Object[] {response.getStatus(), request.getRequestURI(), request.getRequestURL()});
-
-		//response.getWriter().append("Served at: ").append(request.getContextPath());
+		if (httpLogger.isLoggable(Level.INFO)) {
+			httpLogger.log(Level.INFO, "site.http.responseCode", new Object[] {response.getStatus(), request.getRequestURL()});
+		}
 	}
 
 	/**

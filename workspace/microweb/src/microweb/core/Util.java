@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
@@ -26,10 +25,10 @@ import microweb.model.Site;
 
 public class Util {
 
-	public static final String TEMPLATE_PATH = "/WEB-INF/templates";
-	public static final String SITES_KEY = "sites";
-	public static final String DOMAINS_KEY = "domains";
-	public static final String SITE_CANONICAL_DOMAIN_KEY = "canonicalDomains";
+	//public static final String TEMPLATE_PATH = "/WEB-INF/templates";
+	public static final String SITES_KEY = "Sites";
+	public static final String DOMAINS_KEY = "Domains";
+	public static final String SITE_CANONICAL_DOMAIN_KEY = "CanonicalDomains";
 	
 	
 	
@@ -39,6 +38,8 @@ public class Util {
 	private static Properties systemProperties = new Properties();
 	
 	private static ServletContext context = null;
+	
+	private static Object monitor = new Object();
 	
 	public static void init(URL microwebPropertiesPath, URL systemPropertiesPath, ServletContext servletContext) {
 
@@ -75,84 +76,37 @@ public class Util {
 	public static String getSystemProperty(String key) {
 		return systemProperties.getProperty(key);
 	}
-	/*
-	public static String getMicrowebPath() {
-		return "/" + Util.getApplicationConfig().getProperty("microweb-context");
-	}
 	
-	public static String getControllerPath() {
-		return getMicrowebPath() + "/" + Util.getApplicationConfig().getProperty("controller");
-	}
-	*/
 	
-	/*
-	public static boolean isController(String path) {
-		
-		if (path == null || path.equals("") || path.trim().equals("")) {
-			return false;
-		}
-		
-		String controllerPath =  getControllerPath();
-		
-		if (logger.isLoggable(Level.FINEST)) {
-			logger.finer("path: " + path);
-			logger.finer("controllerPath: " + controllerPath);
-		}
-		
-		if (path.matches(controllerPath + "/?")) {
-			return true;
-		}
-		
-		return false;
-		
-	}
-	*/
-	
-	/*
-	public static boolean isMicrowebRoot(String path) {
-		
-		if (path == null || path.equals("") || path.trim().equals("")) {
-			return false;
-		}
-		
-		String microwebPath = getMicrowebPath();
-		if (path.matches(microwebPath + "/?")) {
-			return true;
-		}
-		
-		return false;
-		
-	}
-	*/
-
 	public static Map<String, Domain> getDomainRegistry() {
-		Map<String, Domain> domains = (Map<String, Domain>) context.getAttribute(DOMAINS_KEY);
-		
-		if (domains == null) {
-			domains = new ConcurrentHashMap<String, Domain>();
-			context.setAttribute(DOMAINS_KEY, domains);
-		}
-		return domains;
+		return (Map) createAndStore(DOMAINS_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
 	}
 	
 	public static Map<String, Site> getSiteRegistry() {
-		Map<String, Site> sites = (Map<String, Site>) context.getAttribute(SITES_KEY);
-		
-		if (sites == null) {
-			sites = new ConcurrentHashMap<String, Site>();
-			context.setAttribute(SITES_KEY, sites);
-		}
-		return sites;
+		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
 	}
 	
 	public static Map<String, Domain> getSiteCanonicalDomainsRegistry() {
-		Map<String, Domain> siteCanonicalDomains = (Map<String, Domain>) context.getAttribute(SITE_CANONICAL_DOMAIN_KEY);
+		return (Map) createAndStore(SITE_CANONICAL_DOMAIN_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
+	}
+	
+	private static Object createAndStore(String key, ObjectFactory factory) {
+		Object o = (Object) context.getAttribute(key);
 		
-		if (siteCanonicalDomains == null) {
-			siteCanonicalDomains = new ConcurrentHashMap<String, Domain>();
-			context.setAttribute(SITE_CANONICAL_DOMAIN_KEY, siteCanonicalDomains);
+		if (o == null) {
+			
+			synchronized(monitor) {
+				o = (Object) context.getAttribute(key);
+				
+				if (o == null) {
+					o = factory.create();
+					context.setAttribute(key, o);
+					
+					logger.info("loaded new Registry: " + key);
+				}
+			}
 		}
-		return siteCanonicalDomains;
+		return o;
 	}
 	
 	public static void validateXML(URL xmlPath, URL xsdPath) throws SAXException, IOException {
@@ -170,5 +124,9 @@ public class Util {
         Schema schema = factory.newSchema(new StreamSource(xsdFile));
         Validator validator = schema.newValidator();
         validator.validate(new StreamSource(xmlPath.openStream()));
+	}
+	
+	public interface ObjectFactory {
+		public Object create();
 	}
 }

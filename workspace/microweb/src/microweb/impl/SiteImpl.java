@@ -335,15 +335,15 @@ public class SiteImpl implements Site{
 					return (HttpServletRequest request, HttpServletResponse response) -> {
 						
 
-						response.getWriter().println("s_id: " + s_id);
-						response.getWriter().println("s_label: " + s_label);
-						response.getWriter().println("s_slug: " + s_slug);
-						response.getWriter().println("s_page: " + s_page);
+						//response.getWriter().println("s_id: " + s_id);
+						//response.getWriter().println("s_label: " + s_label);
+						//response.getWriter().println("s_slug: " + s_slug);
+						//response.getWriter().println("s_page: " + s_page);
 						
-						String resourcePath = request.getServletContext().getRealPath(pagePath);
+						//String resourcePath = request.getServletContext().getRealPath(pagePath);
 						
-						response.getWriter().println("pagePath: " + pagePath);
-						response.getWriter().println("resourcePath: " + resourcePath);
+						//response.getWriter().println("pagePath: " + pagePath);
+						//response.getWriter().println("resourcePath: " + resourcePath);
 						request.getRequestDispatcher(pagePath).forward(request, response);
 						
 					};

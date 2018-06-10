@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -46,8 +49,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import microweb.impl.XMLDomainFactory;
-import microweb.impl.XMLSiteFactory;
 import microweb.model.Domain;
 import microweb.model.Site;
 
@@ -141,134 +142,53 @@ public class FrontController extends HttpServlet {
 	public void init() throws ServletException {
 		logger.info("Initialising " + this.getClass().getName() +  " Servlet");
 
+		URL microwebProperties = null;
+		URL systemProperties = null;
 		try {
-			URL microwebProperties = getServletContext().getResource(this.getServletContext().getInitParameter("microweb-properties"));
-			URL systemProperties = getServletContext().getResource(this.getServletContext().getInitParameter("system-properties"));
+			microwebProperties = getServletContext().getResource(this.getServletContext().getInitParameter("microweb-properties"));
+			systemProperties = getServletContext().getResource(this.getServletContext().getInitParameter("system-properties"));
 			
 			Util.init(microwebProperties, systemProperties, getServletContext());
-			
-			
-			
-		} catch (MalformedURLException e1) {
-			this.failedInit = true;
-		}
 
+			String configuredSiteFactory = Util.getSystemProperty("SiteFactory");
 			
-
-		if (!this.failedInit) {
-			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
-			String sitesConfigPath = Util.MICROWEB_HOME + Util.getApplicationProperty("sites-config");
-			String sitesConfigXsd = Util.MICROWEB_HOME + Util.getSystemProperty("sitesConfigXsd");
-			
-			String rootElement = "/sites-config";
-			String sitesExpr = rootElement + "/sites/site";
-			//String sitesConfigXsd = microwebHome + "/config/sites-config.xsd";
-			
-			
-			try {
+			if (configuredSiteFactory != null && !configuredSiteFactory.equals("")) {
 				
-				URL sitesResourcePath = getServletContext().getResource(sitesConfigPath);
-				logger.fine("loading sites configuration from: " + sitesResourcePath.toExternalForm());
-				
-				
-				Util.validateXML(sitesResourcePath, getServletContext().getResource(sitesConfigXsd));
-				
-				DocumentBuilder builder = factory.newDocumentBuilder();
-				
-				Document siteDom = builder.parse(sitesResourcePath.openStream());
-				
-				loadSites(sitesExpr, siteDom);
-				
-				checkCanonicals();
-				
-				registerDomains();
-				
-			    logger.info("Complete");
-				 
-				
-			} catch (ParserConfigurationException e) {
-				logger.log(Level.SEVERE, "Unable to W3C DOM Parser", e);
-			} catch (SAXException e) {
-				logger.log(Level.SEVERE, "microweb.application.config.sites-config.invalid", new Object[] {sitesConfigPath});
-			} catch (XPathExpressionException e) {
-				logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesExpr, e);
-			} catch (MalformedURLException e) {
-				logger.log(Level.SEVERE, "Invalid location for sites configuration: " + sitesConfigPath, e);
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, "Unable to read XML file: " + sitesConfigPath, e);
-			} 
-
-			logger.info("Initialisation completed");
-		} else {
-			logger.log(Level.SEVERE, "microweb.application.initialisationFailed", new Object[] {});
-		}
-
-	}
-
-
-
-	private void registerDomains() {
-		Collection<Site> sites =  Util.getSiteRegistry().values();
-		
-		for (Site site : sites) {
-			
-			Collection<Domain> domains = site.getDomains();
-			
-			for (Domain domain : domains) {
-				Domain existingDomain = Util.getDomainRegistry().putIfAbsent(domain.getName(), domain);
-				
-				if (existingDomain != null) {
-					logger.log(Level.WARNING, "microweb.application.config.sites-config.duplicatedDomains", new Object[] {domain.getName()});
+				try {
+					Class siteFactoryClass = Class.forName(configuredSiteFactory);
+					SiteFactory siteFactory = (SiteFactory) siteFactoryClass.newInstance();
+					
+					Method loadSitesMethod = siteFactoryClass.getMethod("loadSites", new Class[] {ServletContext.class, String.class});
+					
+					String sitesConfigPath = Util.MICROWEB_HOME + Util.getApplicationProperty("sites-config");
+					loadSitesMethod.invoke(siteFactory, new Object[] {getServletContext(), sitesConfigPath});
+				} catch (Exception e) {
+					handleInitFailed(e, "microweb.application.sites.initFailed.factoryClassNotFound", new Object[] {"SiteFactory", configuredSiteFactory, "loadsites()"});
 				}
-			}
-		}
-	}
-
-	private void checkCanonicals() {
-		Collection<Site> sites =  Util.getSiteRegistry().values();
-		
-		for (Site site : sites) {
-			
-			if (site.getCanonicalDomain() == null) {
-				logger.log(Level.WARNING, "microweb.application.config.sites-config.noCanonicalDomainForSite", new Object[] {site.getName()});
-				site.setStatus(Site.STATUS_INVALID);
 			} else {
-				logger.config(site.getCanonicalDomain().getName() + " is the canonical name for the " + site.getName() + " site.");
-				site.setStatus(Site.STATUS_ONLINE);
-			}
-		}
-	}
-
-
-
-	private void loadSites(String sitesExpr, Document siteDom)	throws XPathExpressionException, MalformedURLException {
-		XPath xPath = XPathFactory.newInstance().newXPath();
-
-		XPathExpression expr = xPath.compile(sitesExpr);
-		
-		
-		NodeList sites = (NodeList) expr.evaluate(siteDom.getDocumentElement(), XPathConstants.NODESET);
-		
-		for (int i = 0; i < sites.getLength(); i++) {
-			Element siteElement = (Element) sites.item(i);
-			String location = xPath.evaluate("@location", siteElement);
-			String config = xPath.evaluate("@config", siteElement);
-
-			logger.info("location:" + location + ", config:" + config);
-
-			try {
-				Site site = XMLSiteFactory.loadSite(this.getServletContext(), location, config);
-				
-				Util.getSiteRegistry().put(site.getName(), site);
-				logger.log(Level.CONFIG, "microweb.application.config.site.loaded", new Object[] {site.getName()});
-			} catch (Exception e) {
-				logger.log(Level.SEVERE, "microweb.application.config.site.failedToLoad", new Object[] {location + "/" + config});
-				logger.log(Level.SEVERE, "Fail to instantiate site", e);
+				handleInitFailed("microweb.application.sites.initialisationFailed", new Object[] {"Sites", "SiteFactory", systemProperties.toExternalForm()});
 			}
 			
+		} catch (MalformedURLException e) {
+			handleInitFailed(e, "microweb.application.initialisationFailed", new Object[] {});
 		}
+
 	}
+
+
+	private void handleInitFailed(String messageId, Object[] values) {
+		handleInitFailed(null, messageId, values);
+	}
+	
+	private void handleInitFailed(Throwable e, String messageId, Object[] values) {
+		logger.log(Level.SEVERE, messageId, values);
+		if (e != null) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+		}
+		
+	}
+
+	
 	
 
 

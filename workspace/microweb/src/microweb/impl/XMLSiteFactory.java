@@ -2,8 +2,10 @@ package microweb.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,31 +48,121 @@ public class XMLSiteFactory extends SiteFactory {
 	
 	private static Logger logger = Logger.getLogger("microweb.config");
 	
+	public static void loadSites(ServletContext context, String sitesConfigPath) {
+		
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+		
+		String sitesConfigXsd = Util.MICROWEB_HOME + Util.getSystemProperty("sitesConfigXsd");
+		
+		String rootElement = "/sites-config";
+		String sitesExpr = rootElement + "/sites/site";
+		//String sitesConfigXsd = microwebHome + "/config/sites-config.xsd";
+		
+		
+		try {
+			
+			URL sitesResourcePath = context.getResource(sitesConfigPath);
+			logger.fine("loading sites configuration from: " + sitesResourcePath.toExternalForm());
+			
+			
+			Util.validateXML(sitesResourcePath, context.getResource(sitesConfigXsd));
+			
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			
+			Document siteDom = builder.parse(sitesResourcePath.openStream());
+			
+			loadSites(context, sitesExpr, siteDom);
+			
+			checkCanonicals();
+			
+			registerDomains();
+			
+		    logger.info("Complete");
+			 
+			
+		} catch (ParserConfigurationException e) {
+			logger.log(Level.SEVERE, "Unable to W3C DOM Parser", e);
+		} catch (SAXException e) {
+			logger.log(Level.SEVERE, "microweb.application.config.sites-config.invalid", new Object[] {sitesConfigPath});
+		} catch (XPathExpressionException e) {
+			logger.log(Level.SEVERE, "Unable to compile Xpath Expression: " + sitesExpr, e);
+		} catch (MalformedURLException e) {
+			logger.log(Level.SEVERE, "Invalid location for sites configuration: " + sitesConfigPath, e);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to read XML file: " + sitesConfigPath, e);
+		} 
+
+		logger.info("Initialisation completed");
+	}
 	
-	public static Site loadSite(ServletContext context, String location, String config) throws Exception {
+	private static Site loadSite(ServletContext context, String location, String config) throws Exception {
 
 		
 		return SiteImpl.createFromConfig(context, location, config);
 		
 	}
-
-	/*
-	static class PageAction implements Action {
-
-		private String template;
+	
+	private static void registerDomains() {
+		Collection<Site> sites =  Util.getSiteRegistry().values();
 		
-		PageAction(String siteInstallation, String templatesFolder, String templateName) {
-			this.template = siteInstallation + File.separator + TEMPLATES_FOLDER + File.separator + templateName;
-		}
-		
-		@Override
-		public void doAction(HttpServletRequest request, HttpServletResponse response, ServletContext servletContext) throws ServletException, IOException {
+		for (Site site : sites) {
 			
-			logger.fine("template: " + this.template);
-			RequestDispatcher dispatcher = servletContext.getRequestDispatcher(this.template);
-			dispatcher.forward(request, response);
+			Collection<Domain> domains = site.getDomains();
+			
+			for (Domain domain : domains) {
+				Domain existingDomain = Util.getDomainRegistry().putIfAbsent(domain.getName(), domain);
+				
+				if (existingDomain != null) {
+					logger.log(Level.WARNING, "microweb.application.config.sites-config.duplicatedDomains", new Object[] {domain.getName()});
+				}
+			}
 		}
-		
 	}
-	*/
+
+	private static void checkCanonicals() {
+		Collection<Site> sites =  Util.getSiteRegistry().values();
+		
+		for (Site site : sites) {
+			
+			if (site.getCanonicalDomain() == null) {
+				logger.log(Level.WARNING, "microweb.application.config.sites-config.noCanonicalDomainForSite", new Object[] {site.getName()});
+				site.setStatus(Site.STATUS_INVALID);
+			} else {
+				logger.config(site.getCanonicalDomain().getName() + " is the canonical name for the " + site.getName() + " site.");
+				site.setStatus(Site.STATUS_ONLINE);
+			}
+		}
+	}
+
+
+
+	private static void loadSites(ServletContext context, String sitesExpr, Document siteDom)	throws XPathExpressionException, MalformedURLException {
+		XPath xPath = XPathFactory.newInstance().newXPath();
+
+		XPathExpression expr = xPath.compile(sitesExpr);
+		
+		
+		NodeList sites = (NodeList) expr.evaluate(siteDom.getDocumentElement(), XPathConstants.NODESET);
+		
+		for (int i = 0; i < sites.getLength(); i++) {
+			Element siteElement = (Element) sites.item(i);
+			String location = xPath.evaluate("@location", siteElement);
+			String config = xPath.evaluate("@config", siteElement);
+
+			logger.info("location:" + location + ", config:" + config);
+
+			try {
+				Site site = XMLSiteFactory.loadSite(context, location, config);
+				
+				Util.getSiteRegistry().put(site.getName(), site);
+				logger.log(Level.CONFIG, "microweb.application.config.site.loaded", new Object[] {site.getName()});
+			} catch (Exception e) {
+				logger.log(Level.SEVERE, "microweb.application.config.site.failedToLoad", new Object[] {location + "/" + config});
+				logger.log(Level.SEVERE, "Fail to instantiate site", e);
+			}
+			
+		}
+	}
+
 }

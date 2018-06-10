@@ -2,25 +2,24 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
       <!-- XML Schema Generated from XML Document on Tue May 29 2018 14:24:10 GMT+0100 (GMT Summer Time) -->
       <!-- with XmlGrid.net Free Online Service http://xmlgrid.net -->
-      <xs:element name="sites-config">
-            <xs:complexType>
-                  <xs:sequence>
-                        <xs:element name="sites">
-                              <xs:complexType>
-                                    <xs:sequence>
-                                          <xs:element name="site" maxOccurs="unbounded">
-                                                <xs:complexType>
-                                                      <xs:attribute name="location" type="xs:string"></xs:attribute>
-                                                      <xs:attribute name="config" type="xs:string"></xs:attribute>
-                                                </xs:complexType>
-                                          </xs:element>
-                                    </xs:sequence>
-                              </xs:complexType>
-                        </xs:element>
-
-                  </xs:sequence>
-            </xs:complexType>
-      </xs:element>
+	<xs:element name="sites-config">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="sites">
+					<xs:complexType>
+						<xs:all>
+							<xs:element name="site">
+								<xs:complexType>
+									<xs:attribute name="location" type="xs:string"></xs:attribute>
+									<xs:attribute name="config" type="xs:string"></xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:all>
+					</xs:complexType>
+				</xs:element>
+			</xs:all>
+		</xs:complexType>
+	</xs:element>
 
 	 
 

@@ -27,46 +27,81 @@ import microweb.core.Util;
 import microweb.model.Domain;
 import microweb.model.PageHandler;
 import microweb.model.Site;
+import microweb.model.Status;
 
 public class SiteImpl implements Site{
 
-	private static final String SITE_ROOT = "/site";
+	//private static final String SITE_ROOT = "/site";
 	
-	protected static Logger logger = Logger.getLogger("microweb.core", "messages");
+	private Logger logger;
 	
-	protected String name;
+	private String name;
 	//protected String context;
-	protected int status = Site.STATUS_INVALID;
+	private Status status;
 	
-	protected NodeList navigations;
-	protected Element siteNav;
+	private NodeList navigations;
+	private Element siteNav;
 	
-	protected Element siteElement;
+	private Element siteElement;
 	
 	private Domain canonicalDomain;
 	private List<Domain> domains;
+	
+	private Properties properties;
 	
 
 	private static XPath xPath = XPathFactory.newInstance().newXPath();
 	
 	private SiteImpl(String name, Element siteElement) throws XPathExpressionException {
+		//assign variables
 		this.name = name;
 		this.siteElement = siteElement;
 		this.domains = new ArrayList<Domain>();
+		this.properties = new Properties();
+		
+		//setup logger for this specific site
+		this.logger = Logger.getLogger("microweb.core.sites." + this.getName(), "messages");
+		
+		//load site
+		this.loadProperties(siteElement);
 		this.loadDomains(siteElement);
 		this.loadSections(siteElement);
+		
+		//set status
+		this.status = Site.STATUS_CONFIGURED;
+		
+		
 	}
 	
+	
+
 	public static Site createFromElement(Element siteElement) throws XPathExpressionException {
 		
-		String s_name = xPath.evaluate(SITE_ROOT + "/@name", siteElement);
-		//String s_context = xPath.evaluate(SITE_ROOT + "/@context", siteElement);
+		String s_name = xPath.evaluate("@name", siteElement);
 
 		SiteImpl site = new SiteImpl(s_name, siteElement);
 		return site;
 	}
+	
+	protected void loadProperties(Element siteElement2) throws XPathExpressionException {
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		XPathExpression expr = xPath.compile("properties/*");
+		
+		NodeList propertyElements = (NodeList) expr.evaluate(siteElement, XPathConstants.NODESET);
 
-	private void loadDomains(Element siteElement) throws XPathExpressionException {
+		
+		for (int i = 0; i < propertyElements.getLength(); i++) {
+		    Element propertyElement = (Element) propertyElements.item(i);
+		    String s_name = xPath.evaluate("@name", propertyElement);
+		    String s_value = xPath.evaluate("@vaue", propertyElement);
+		    
+		    this.properties.put(s_name, s_value);
+		    
+		}
+		
+	}
+
+	protected void loadDomains(Element siteElement) throws XPathExpressionException {
 		XPath xPath = XPathFactory.newInstance().newXPath();
 		XPathExpression expr = xPath.compile("domains/*");
 		
@@ -124,7 +159,7 @@ public class SiteImpl implements Site{
 		}
 	}
 	
-	private void loadSections(Element siteElement) throws XPathExpressionException {
+	protected void loadSections(Element siteElement) throws XPathExpressionException {
 		
 		XPathExpression expr = xPath.compile("navigations/*");
 		
@@ -178,12 +213,12 @@ public class SiteImpl implements Site{
 	}
 
 	@Override
-	public int getStatus() {
+	public Status getStatus() {
 		return this.status;
 	}
 
 	@Override
-	public void setStatus(int status) {
+	public void setStatus(Status status) {
 		this.status = status;
 	}
 
@@ -244,16 +279,17 @@ public class SiteImpl implements Site{
 				
 				logger.finest("section with id: " + s_id + " will handle uri: " + uri);
 				
-				return (HttpServletRequest request, HttpServletResponse response) -> {
-					
+				String page = s_page != null && !s_page.equals("") ? s_page : this.properties.getProperty("defaultPage");
+				
+				if (page != null && !page.equals("")) {
+					return (HttpServletRequest request, HttpServletResponse response) -> {
+						
 
-					response.getWriter().println("s_id: " + s_id);
-					response.getWriter().println("s_label: " + s_label);
-					response.getWriter().println("s_slug: " + s_slug);
-					response.getWriter().println("s_page: " + s_page);
-					
-					
-					if (s_page != null && !s_page.equals("")) {
+						response.getWriter().println("s_id: " + s_id);
+						response.getWriter().println("s_label: " + s_label);
+						response.getWriter().println("s_slug: " + s_slug);
+						response.getWriter().println("s_page: " + s_page);
+						
 						try {
 							request.getRequestDispatcher(s_page).forward(request, response);
 						} catch (ServletException e) {
@@ -262,13 +298,19 @@ public class SiteImpl implements Site{
 							}
 							response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 						}
-					} else {
-						if (logger.isLoggable(Level.SEVERE)) {
-							logger.log(Level.SEVERE, "No Page to render output");
-						}
-						response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+						
+					};
+					
+				} else {
+					if (logger.isLoggable(Level.WARNING)) {
+						logger.log(Level.WARNING, "No Page to render output for section: " + s_id + "  (" + s_label + ").  either set the 'page' attribute for this section or set a the 'defaultPage' site property");
 					}
-				};
+					return (HttpServletRequest request, HttpServletResponse response) -> {
+						response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+					};
+				}
+				
+				
 				
 			} catch (XPathExpressionException e) {
 				if (logger.isLoggable(Level.SEVERE)) {

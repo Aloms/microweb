@@ -9,20 +9,20 @@ import microweb.model.PageHandler;
 
 public interface Site {
 
-	public static final int STATUS_INVALID = 1;
-	public static final int STATUS_OFFLINE = 2;
-	public static final int STATUS_ONLINE = 3;
-	public static final int STATUS_MAINTENANCE = 4;
+	public static final Status STATUS_CONFIGURED = () -> {return "Configured";};
+	public static final Status STATUS_INVALID = () -> {return "Invalid";};
+	public static final Status STATUS_OFFLINE = () -> {return "Offline";};
+	public static final Status STATUS_ONLINE = () -> {return "Online";};
+	public static final Status STATUS_MAINTENANCE = () -> {return "Maintenance";};
 	
 	public String getName();
 
-	public int getStatus();
-	public void setStatus(int status);
+	public Status getStatus();
+	public void setStatus(Status status);
 	
 	public Domain getCanonicalDomain();
-	public Collection getDomains();
+	public Collection<Domain> getDomains();
 
 	
 	public PageHandler getPageHandler(String uri);
-	
 }

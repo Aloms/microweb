@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site name="prep">
 	<properties>
-		<property name="defaultTemplate" value="pages/landing-page.jsp" />
+		<property name="defaultPage" value="pages/landing-page.jsp" />
 	</properties>
 	<domains>
 		<!-- example canonical domains for all sites -->

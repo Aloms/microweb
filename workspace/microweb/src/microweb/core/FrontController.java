@@ -238,7 +238,7 @@ public class FrontController extends HttpServlet {
 				site.setStatus(Site.STATUS_INVALID);
 			} else {
 				logger.config(site.getCanonicalDomain().getName() + " is the canonical name for the " + site.getName() + " site.");
-				site.setStatus(Site.STATUS_ONLINE);
+				//site.setStatus(Site.STATUS_ONLINE);
 			}
 		}
 	}

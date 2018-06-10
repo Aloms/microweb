@@ -47,12 +47,10 @@ public class XMLSiteFactory extends SiteFactory {
 	private static Logger logger = Logger.getLogger("microweb.config");
 	
 	
-	public static Site loadSite(URL siteInstallation) throws Exception {
+	public static Site loadSite(ServletContext context, String location, String config) throws Exception {
 
 		
-		logger.info("Initialising site from configuration file is [" + siteInstallation.toExternalForm() + "]");
-
-		return SiteImpl.createFromElement(DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(siteInstallation.openStream()).getDocumentElement());
+		return SiteImpl.createFromConfig(context, location, config);
 		
 	}
 

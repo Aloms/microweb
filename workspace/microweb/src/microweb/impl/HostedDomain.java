@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,7 +26,7 @@ public abstract class HostedDomain extends AbstractDomain {
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException {
+	public void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		
 		String uri = request.getRequestURI();
 		
@@ -75,7 +76,7 @@ public abstract class HostedDomain extends AbstractDomain {
 		}
 	}
 	
-	protected void forwardTo(PageHandler pageHandler, HttpServletRequest request, HttpServletResponse response) throws IOException {
+	protected void forwardTo(PageHandler pageHandler, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		pageHandler.handle(request, response);
 	}
 

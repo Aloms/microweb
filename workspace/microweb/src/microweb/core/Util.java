@@ -24,6 +24,8 @@ import microweb.model.Domain;
 import microweb.model.Site;
 
 public class Util {
+	
+	public static String MICROWEB_HOME = "/WEB-INF/";
 
 	//public static final String TEMPLATE_PATH = "/WEB-INF/templates";
 	public static final String SITES_KEY = "Sites";

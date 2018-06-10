@@ -1,6 +1,8 @@
 package microweb.impl;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -9,9 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -22,6 +27,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import microweb.core.Util;
 import microweb.model.Domain;
@@ -33,9 +39,13 @@ public class SiteImpl implements Site{
 
 	//private static final String SITE_ROOT = "/site";
 	
+	private Logger commonLogger = Logger.getLogger("microweb.core.sites", "messages");
 	private Logger logger;
 	
 	private String name;
+	private String siteHome;
+	private String configName;
+	
 	//protected String context;
 	private Status status;
 	
@@ -52,9 +62,33 @@ public class SiteImpl implements Site{
 
 	private static XPath xPath = XPathFactory.newInstance().newXPath();
 	
-	private SiteImpl(String name, Element siteElement) throws XPathExpressionException {
+	private SiteImpl(ServletContext context, String location, String config) throws XPathExpressionException, SAXException, IOException, ParserConfigurationException {
+		
+		this.siteHome = Util.MICROWEB_HOME + Util.getApplicationProperty("sites-home") + "/" + location;
+		this.configName = siteHome + "/" + config;
+		
+		
+		
+		URL siteUrl = context.getResource(configName);		    	
+		URL xsd = context.getResource(Util.MICROWEB_HOME + Util.getSystemProperty("siteXsd"));
+
+		if(commonLogger.isLoggable(Level.FINE)) {
+			commonLogger.fine("Initialising new site at location: " + this.siteHome + ", and using config file: " + this.configName);
+			
+			commonLogger.fine("Full path to config: " + siteUrl.toExternalForm());
+		}
+		
+		
+		Util.validateXML(siteUrl, xsd);
+
+		commonLogger.info("Initialising site from configuration file is [" + siteUrl.toExternalForm() + "]");
+		
+		Element siteElement = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(siteUrl.openStream()).getDocumentElement();
+				
+		String s_name = xPath.evaluate("@name", siteElement);
+		
 		//assign variables
-		this.name = name;
+		this.name = s_name;
 		this.siteElement = siteElement;
 		this.domains = new ArrayList<Domain>();
 		this.properties = new Properties();
@@ -75,28 +109,36 @@ public class SiteImpl implements Site{
 	
 	
 
-	public static Site createFromElement(Element siteElement) throws XPathExpressionException {
-		
-		String s_name = xPath.evaluate("@name", siteElement);
+	public static Site createFromConfig(ServletContext context, String location, String config) throws XPathExpressionException, SAXException, IOException, ParserConfigurationException {
 
-		SiteImpl site = new SiteImpl(s_name, siteElement);
-		return site;
+		return new SiteImpl(context, location, config);
 	}
 	
-	protected void loadProperties(Element siteElement2) throws XPathExpressionException {
+	protected void loadProperties(Element siteElement) throws XPathExpressionException {
 		XPath xPath = XPathFactory.newInstance().newXPath();
 		XPathExpression expr = xPath.compile("properties/*");
 		
 		NodeList propertyElements = (NodeList) expr.evaluate(siteElement, XPathConstants.NODESET);
 
+		StringBuffer printProps = null;
+		if (logger.isLoggable(Level.CONFIG)) {
+			printProps = new StringBuffer();
+	    }
 		
 		for (int i = 0; i < propertyElements.getLength(); i++) {
 		    Element propertyElement = (Element) propertyElements.item(i);
 		    String s_name = xPath.evaluate("@name", propertyElement);
-		    String s_value = xPath.evaluate("@vaue", propertyElement);
+		    String s_value = xPath.evaluate("@value", propertyElement);
 		    
 		    this.properties.put(s_name, s_value);
 		    
+		    if (logger.isLoggable(Level.CONFIG)) {
+		    	printProps.append("\nSite [" + this.getName() + "] property name: '" + s_name + "', value: '" + s_value + "'");
+		    }
+		}
+		
+		if (logger.isLoggable(Level.CONFIG)) {
+			logger.config(printProps.toString());
 		}
 		
 	}
@@ -273,15 +315,23 @@ public class SiteImpl implements Site{
 				String s_slug = xPath.evaluate("@slug", section);
 				String s_page = xPath.evaluate("@page", section);
 				
-				if (s_page == null || s_page.equals("")) {
-					
+				if (logger.isLoggable(Level.FINE)) {
+					logger.fine("section with id: " + s_id + " will handle uri: " + uri);
 				}
 				
-				logger.finest("section with id: " + s_id + " will handle uri: " + uri);
-				
+				if (logger.isLoggable(Level.FINEST)) {
+					logger.finest("section " + s_id + " - s_page: " + s_page + ", defaultPage: " + this.properties.getProperty("defaultPage"));
+				}
 				String page = s_page != null && !s_page.equals("") ? s_page : this.properties.getProperty("defaultPage");
 				
+				
+				if (logger.isLoggable(Level.FINER)) {
+					logger.finer("jsp page for this section: " + s_id + ", is:" + page);
+				}
+				
 				if (page != null && !page.equals("")) {
+					
+					String pagePath = this.siteHome + "/" + page;
 					return (HttpServletRequest request, HttpServletResponse response) -> {
 						
 
@@ -290,14 +340,11 @@ public class SiteImpl implements Site{
 						response.getWriter().println("s_slug: " + s_slug);
 						response.getWriter().println("s_page: " + s_page);
 						
-						try {
-							request.getRequestDispatcher(s_page).forward(request, response);
-						} catch (ServletException e) {
-							if (logger.isLoggable(Level.SEVERE)) {
-								logger.log(Level.SEVERE, "failed to read node attribute(s)", e);
-							}
-							response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-						}
+						String resourcePath = request.getServletContext().getRealPath(pagePath);
+						
+						response.getWriter().println("pagePath: " + pagePath);
+						response.getWriter().println("resourcePath: " + resourcePath);
+						request.getRequestDispatcher(pagePath).forward(request, response);
 						
 					};
 					

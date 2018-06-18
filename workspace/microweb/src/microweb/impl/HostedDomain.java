@@ -77,6 +77,7 @@ public abstract class HostedDomain extends AbstractDomain {
 	}
 	
 	protected void forwardTo(PageHandler pageHandler, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+		//TODO: run pageHandler validator to check request params are valid
 		pageHandler.handle(request, response);
 	}
 

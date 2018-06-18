@@ -50,6 +50,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import microweb.model.Domain;
+import microweb.model.Service;
 import microweb.model.Site;
 
 /**
@@ -59,7 +60,7 @@ import microweb.model.Site;
 public class FrontController extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	
-	//private static final String MICROWEB_PROPERTIES_FILE = "microweb.properties";
+	private static final String MICROWEB_SERVICE_URI = "/Service";
      
 	private Logger logger;
 	private Logger httpLogger;
@@ -113,16 +114,59 @@ public class FrontController extends HttpServlet {
 		
 		
 		if (failedInit) {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-		} else {
-			Domain domain = Util.getDomainRegistry().get(serverName);
-			if (domain != null) {
-				logger.finest("found domain: " + domain.getName());
-				domain.handle(request, response);
-			} else {
-				logger.finest("no hosted site for domain name: " + serverName);
-				response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			
+			if (logger.isLoggable(Level.FINEST)) {
+				logger.finest("Unable to handle request as the microweb platform is in a failed to initialise state.");
 			}
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+			
+		} else {
+			if (requestUri.equals(MICROWEB_SERVICE_URI)) {
+				//TODO: run service validator to check service parameters
+				if (logger.isLoggable(Level.FINEST)) {
+					logger.finest("request is being handled by microweb service handler");
+				}
+				String name = request.getParameter("name");
+				
+				if (name != null && !name.trim().equals("")) {
+					Service service = Util.getServiceRegistry().get(name);
+					
+					if (service != null) {
+						if (logger.isLoggable(Level.FINEST)) {
+							logger.finest("found service handler");
+						}
+					} else {
+						if (logger.isLoggable(Level.FINEST)) {
+							logger.finest("no service handler called [" + name + "] found");
+						}
+						response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+					}
+				} else {
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("service name must not be null or empty");
+					}
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+				}
+				
+				
+			} else {
+				//TODO: run uri validator to check uri is valid
+				Domain domain = Util.getDomainRegistry().get(serverName);
+				if (domain != null) {
+					
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("found domain: " + domain.getName());
+					}
+					domain.handle(request, response);
+					
+				} else {
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("no hosted site for domain name: " + serverName);
+					}
+					response.sendError(HttpServletResponse.SC_NOT_FOUND);
+				}
+			}
+			
 		}
 
 		if (httpLogger.isLoggable(Level.INFO)) {

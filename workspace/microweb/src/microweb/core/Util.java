@@ -21,6 +21,7 @@ import javax.xml.validation.Validator;
 import org.xml.sax.SAXException;
 
 import microweb.model.Domain;
+import microweb.model.Service;
 import microweb.model.Site;
 
 public class Util {
@@ -28,9 +29,10 @@ public class Util {
 	public static String MICROWEB_HOME = "/WEB-INF/";
 
 	//public static final String TEMPLATE_PATH = "/WEB-INF/templates";
-	public static final String SITES_KEY = "Sites";
-	public static final String DOMAINS_KEY = "Domains";
-	public static final String SITE_CANONICAL_DOMAIN_KEY = "CanonicalDomains";
+	private static final String SITES_KEY = "Sites";
+	private static final String SERVICES_KEY = "Services";
+	private static final String DOMAINS_KEY = "Domains";
+	//private static final String SITE_CANONICAL_DOMAIN_KEY = "CanonicalDomains";
 	
 	
 	
@@ -85,7 +87,11 @@ public class Util {
 	}
 	
 	public static Map<String, Site> getSiteRegistry() {
-		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
+		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Site>();});
+	}
+	
+	public static Map<String, Service> getServiceRegistry() {
+		return (Map) createAndStore(SERVICES_KEY, () -> {return new ConcurrentHashMap<String, Service>();});
 	}
 	
 	/*
@@ -94,13 +100,13 @@ public class Util {
 	}
 	*/
 	
-	private static Object createAndStore(String key, ObjectFactory factory) {
-		Object o = (Object) context.getAttribute(key);
+	private static <T> T createAndStore(String key, ObjectFactory<T> factory) {
+		T o = (T) context.getAttribute(key);
 		
 		if (o == null) {
 			
 			synchronized(monitor) {
-				o = (Object) context.getAttribute(key);
+				o = (T) context.getAttribute(key);
 				
 				if (o == null) {
 					o = factory.create();
@@ -130,7 +136,7 @@ public class Util {
         validator.validate(new StreamSource(xmlPath.openStream()));
 	}
 	
-	public interface ObjectFactory {
-		public Object create();
+	public interface ObjectFactory<T> {
+		public T create();
 	}
 }

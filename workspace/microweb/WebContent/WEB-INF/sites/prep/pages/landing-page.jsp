@@ -7,6 +7,9 @@
 <title>Insert title here</title>
 </head>
 <body>
-
+<%
+	String uri = request.getRequestURI();
+%>
+<p>handling request for: <%= uri %></p>
 </body>
 </html>

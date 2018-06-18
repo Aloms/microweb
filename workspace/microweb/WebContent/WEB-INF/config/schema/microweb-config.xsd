@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- XML Schema Generated from XML Document on Tue May 29 2018 14:24:10 GMT+0100 (GMT Summer Time) -->
+	<!-- with XmlGrid.net Free Online Service http://xmlgrid.net -->
+
+	<xs:element name="microweb-config" type="microweb-config"></xs:element>
+
+    <xs:complexType name="microweb-config">
+		<xs:all>
+    		<xs:element name="services" type="services" maxOccurs="1" minOccurs="0"></xs:element>
+    	</xs:all>
+    </xs:complexType>
+
+    <xs:complexType name="services">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="service" type="service" maxOccurs="unbounded" minOccurs="1"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+
+
+    <xs:complexType name="service">
+    	<xs:all>
+    		<xs:element name="request-parameters" type="request-parameters" maxOccurs="1" minOccurs="1"></xs:element>
+    		<xs:element name="http-methods" type="http-methods" maxOccurs="1" minOccurs="1"></xs:element>
+    		<xs:element name="handler" type="handler" maxOccurs="1" minOccurs="1"></xs:element>
+    	</xs:all>
+    	<xs:attribute name="name" type="xs:string"></xs:attribute>
+    </xs:complexType>
+    
+    <xs:complexType name="request-parameters">
+    	<xs:choice maxOccurs="unbounded">
+    		<xs:element name="parameter" type="parameter" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="parameter">
+    	<xs:attribute name="name" type="xs:string"></xs:attribute>
+    	<xs:attribute name="matches" type="xs:string"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="http-methods">
+    	<xs:choice maxOccurs="unbounded">
+    		<xs:element name="method" type="method" maxOccurs="unbounded" minOccurs="1"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="method">
+    	<xs:attribute name="type" type="methodType" use="required"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="handler">
+    	
+        <xs:attribute name="classname" type="xs:string"></xs:attribute>
+    </xs:complexType>
+    
+    <xs:simpleType name="methodType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="DELETE" />
+			<xs:enumeration value="GET" />
+			<xs:enumeration value="HEAD" />
+			<xs:enumeration value="OPTIONS" />
+			<xs:enumeration value="PATCH" />
+			<xs:enumeration value="POST" />
+			<xs:enumeration value="PUT" />
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

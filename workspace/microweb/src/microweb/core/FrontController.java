@@ -186,6 +186,8 @@ public class FrontController extends HttpServlet {
 	public void init() throws ServletException {
 		logger.info("Initialising " + this.getClass().getName() +  " Servlet");
 
+		
+		
 		URL microwebProperties = null;
 		URL systemProperties = null;
 		try {
@@ -194,12 +196,16 @@ public class FrontController extends HttpServlet {
 			
 			Util.init(microwebProperties, systemProperties, getServletContext());
 
+			
+			loadCore(this.getServletContext());
+			
+			
 			String configuredSiteFactory = Util.getSystemProperty("SiteFactory");
 			
 			if (configuredSiteFactory != null && !configuredSiteFactory.equals("")) {
 				
 				try {
-					Class siteFactoryClass = Class.forName(configuredSiteFactory);
+					Class<?> siteFactoryClass = Class.forName(configuredSiteFactory);
 					SiteFactory siteFactory = (SiteFactory) siteFactoryClass.newInstance();
 					
 					Method loadSitesMethod = siteFactoryClass.getMethod("loadSites", new Class[] {ServletContext.class, String.class});
@@ -217,8 +223,73 @@ public class FrontController extends HttpServlet {
 			handleInitFailed(e, "microweb.application.initialisationFailed", new Object[] {});
 		}
 
+		
+		
 	}
 
+
+	public void loadCore(ServletContext context) {
+		String microwebConfigPath = Util.MICROWEB_HOME + Util.getSystemProperty("microwebConfig");
+		String microwebSchemaPath = Util.MICROWEB_HOME + Util.getSystemProperty("microwebSchema");
+		
+		if (httpLogger.isLoggable(Level.FINEST)) {
+			
+			logger.finest("microwebConfigPath: " + microwebConfigPath);
+			logger.finest("microwebSchemaPath: " + microwebSchemaPath);
+			
+		}
+
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		
+		
+		
+		try {
+			
+			URL microwebConfigUrl = context.getResource(microwebConfigPath);
+			URL microwebSchemaUrl = context.getResource(microwebSchemaPath);
+			
+			if (httpLogger.isLoggable(Level.FINEST)) {
+				
+				logger.finest("microwebConfigUrl: " + microwebConfigUrl.toExternalForm());
+				logger.finest("microwebSchemaUrl: " + microwebSchemaUrl.toExternalForm());
+				
+			}
+			
+			if (httpLogger.isLoggable(Level.FINE)) {
+				logger.fine("Initialising microweb platform from : " + microwebConfigUrl.toExternalForm());
+			}
+			
+			Util.validateXML(microwebConfigUrl, microwebSchemaUrl);
+			
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			
+			Document siteDom = builder.parse(microwebConfigUrl.openStream());
+			
+			/*
+			loadSites(context, sitesExpr, siteDom);
+			
+			checkCanonicals();
+			
+			registerDomains();
+			
+			*/
+			
+			if (httpLogger.isLoggable(Level.FINE)) {
+				logger.info("Finished initialising platform");
+			}
+			
+		} catch (ParserConfigurationException e) {
+			handleInitFailed(e, "microweb.application.config.schemaValidationFailed", new Object[] {microwebConfigPath, microwebSchemaPath});
+		} catch (SAXException e) {
+			handleInitFailed(e, "microweb.application.config.invalidCoreConfigFiles", new Object[] {microwebConfigPath, microwebSchemaPath});
+		} catch (MalformedURLException e) {
+			handleInitFailed(e, "microweb.application.config.invalidUrlToCoreConfigFiles", new Object[] {microwebConfigPath, microwebSchemaPath});
+		} catch (IOException e) {
+			handleInitFailed(e, "microweb.application.config.unableToReadCoreConfigFiles", new Object[] {microwebConfigPath, microwebSchemaPath});
+		} 
+
+		logger.info("Initialisation completed");
+	}
 
 	private void handleInitFailed(String messageId, Object[] values) {
 		handleInitFailed(null, messageId, values);

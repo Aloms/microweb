@@ -1,0 +1,13 @@
+<microweb-config>
+	<services>
+		<service name="mw.version">
+			<request-parameters>
+				<parameter name="example" matches=""/>
+			</request-parameters>
+			<http-methods>
+				<method type="GET"/>
+			</http-methods>
+			<handler classname="microweb.services.MicrowebVersion"/>
+		</service>
+	</services>
+</microweb-config>

@@ -1,5 +1,5 @@
 package microweb.model;
 
-public class ServiceResponse {
+public interface ServiceResponse {
 
 }

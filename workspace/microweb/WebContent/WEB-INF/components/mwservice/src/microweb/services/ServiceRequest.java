@@ -1,4 +1,4 @@
-package microweb.model;
+package microweb.services;
 
 public interface ServiceRequest {
 

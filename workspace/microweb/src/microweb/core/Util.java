@@ -13,15 +13,19 @@ import java.util.logging.Logger;
 
 import javax.servlet.ServletContext;
 import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
+import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import microweb.model.Component;
 import microweb.model.Domain;
-import microweb.model.Service;
 import microweb.model.Site;
 
 public class Util {
@@ -33,6 +37,10 @@ public class Util {
 	private static final String SERVICES_KEY = "Services";
 	private static final String DOMAINS_KEY = "Domains";
 	//private static final String SITE_CANONICAL_DOMAIN_KEY = "CanonicalDomains";
+	
+	public static final String REGISTRY_COMPONENTS = "MW_COMPONENTS";
+	public static final String REGISTRY_SITES = "MW_SITES";
+	public static final String REGISTRY_DOMAINS = "MW_DOMAINS";
 	
 	
 	
@@ -81,7 +89,7 @@ public class Util {
 		return systemProperties.getProperty(key);
 	}
 	
-	
+	/*
 	public static Map<String, Domain> getDomainRegistry() {
 		return (Map) createAndStore(DOMAINS_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
 	}
@@ -90,10 +98,20 @@ public class Util {
 		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Site>();});
 	}
 	
+	public static Map<String, Component> getComponentRegistry() {
+		return (Map) createAndStore(SITES_KEY, () -> {return new ConcurrentHashMap<String, Component>();});
+	}
+	*/
+	public static <T> Map<String, T> getRegistry(String name) {
+		return (Map<String, T>) createAndStore(name, () -> {return new ConcurrentHashMap<String, T>();});
+	}
+	
+	
+	/*
 	public static Map<String, Service> getServiceRegistry() {
 		return (Map) createAndStore(SERVICES_KEY, () -> {return new ConcurrentHashMap<String, Service>();});
 	}
-	
+	*/
 	/*
 	public static Map<String, Domain> getSiteCanonicalDomainsRegistry() {
 		return (Map) createAndStore(SITE_CANONICAL_DOMAIN_KEY, () -> {return new ConcurrentHashMap<String, Domain>();});
@@ -121,22 +139,28 @@ public class Util {
 	
 	public static void validateXML(URL xmlPath, URL xsdPath) throws SAXException, IOException {
 		
-		if (xmlPath == null) {
-			throw new RuntimeException("No url given for xmlPath, failed to validate xml.");
-		}
-		
-		if (xsdPath == null) {
-			throw new RuntimeException("No url given for xsdpath, failed to validate xml: " + xmlPath.toExternalForm());
-		}
-		
 		InputStream xsdFile = xsdPath.openStream(); 
 		SchemaFactory factory =  SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
         Schema schema = factory.newSchema(new StreamSource(xsdFile));
         Validator validator = schema.newValidator();
         validator.validate(new StreamSource(xmlPath.openStream()));
+        
 	}
 	
 	public interface ObjectFactory<T> {
 		public T create();
+	}
+	
+	public static ServletContext getServletContext() {
+		return context;
+	}
+	
+	public static Document getDocument(URL url) throws SAXException, IOException, ParserConfigurationException {
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder builder = factory.newDocumentBuilder();
+		
+		Document dom = builder.parse(url.openStream());
+		
+		return dom;
 	}
 }

@@ -1,0 +1,19 @@
+<component name="mwservices">
+	<parameters>
+		<parameter name="myParam" value="myValue"/>
+	</parameters>
+	<logger name="microweb.services" level="ALL"/>
+
+	<handlers>
+		<handler event="install" class="component.impl.Feature"/>
+		<handler event="activate" class="component.impl.Feature"/>
+		<handler event="initialise" class="component.impl.Feature"/>
+		<handler event="deactivate" class="component.impl.Feature"/>
+		<handler event="uninstall" class="component.impl.Feature"/>
+	</handlers>
+	
+	<features>
+		<feature name="services" config="config/custom-config.xml" xsd="config/custom-config.xsd" validate-config="true" class="component.impl.Feature"/>
+	</features>
+
+</component>

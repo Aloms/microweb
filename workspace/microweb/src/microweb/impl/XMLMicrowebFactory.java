@@ -2,17 +2,23 @@ package microweb.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -414,13 +420,13 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		private Logger myLogger;
 		private List<Handler> handlers;
 		private String componentHome;
-		private MyClassLoader classLoader;
+		//private MyClassLoader classLoader;
 		//private List<String> classNames;
 		
 		private ComponentImpl(URL componentConfigUrl) throws SAXException, IOException, ParserConfigurationException, XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException {
 			
 			this.componentHome = componentConfigUrl.toExternalForm().substring(0, componentConfigUrl.toExternalForm().lastIndexOf("/"));
-			this.classLoader = new MyClassLoader(this);
+			//this.classLoader = new MyClassLoader(this);
 			
 			if (logger.isLoggable(Level.FINE)) {
 				logger.fine("Initialising component at: " + this.componentHome);
@@ -440,94 +446,16 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			
 			this.parameters = this.extractProperties(dom.getDocumentElement(), xPath);
 			this.myLogger = this.extractLogger(dom.getDocumentElement(), xPath);
-			this.handlers = this.extractHandlers(dom.getDocumentElement(), xPath, this.classLoader);
+			this.handlers = this.extractHandlers(dom.getDocumentElement(), xPath);
 			
 			
 			
 		}
 
-		private class MyClassLoader extends ClassLoader {
-			
-			private Collection<String> handledClasses;
-			private Component component;
-			
-			private MyClassLoader(Component component) {
-		        super(component.getClass().getClassLoader());
-		        this.handledClasses = new HashSet<String>();
-		        this.component = component;
-		    }
-			
-			public void handleClass(String classname) {
-				this.handledClasses.add(classname);
-				
-				if(this.component.getLogger().isLoggable(Level.FINEST)) {
-	        		this.component.getLogger().finest("Custom classloader for the " + this.component.getName() + " component will handle loading requests for: " + classname);
-	        	}
-			}
-			
-			public Class loadClass(String name) throws ClassNotFoundException {
-				
-		        if (!this.handledClasses.contains(name)) {
-		        	if(this.component.getLogger().isLoggable(Level.FINEST)) {
-		        		this.component.getLogger().finest(name + " is not one of the classes this class loader is handling for component: " + this.component.getName() + ".  Passing on the class load request to parent class loader: " + this.getParent().getClass().getCanonicalName());
-		        	}
-		        	return super.loadClass(name);
-		        }
-		        
-		        if(this.component.getLogger().isLoggable(Level.FINEST)) {
-	        		this.component.getLogger().finest(name + " is one of the classes this class loader is handling for component: " + this.component.getName());
-	        	}
-		        
-		        String urlString = this.component.getHome() + "/" + "classes" + "/" + name.replace(".", "/") + ".class";
-	            
-	            if(this.component.getLogger().isLoggable(Level.FINEST)) {
-	        		this.component.getLogger().finest("attempting to load class at: " + urlString);
-	        	}
-	            
-	  
-	            URL url = null;
-				try {
-					url = new URL(urlString);
-					
-					if(this.component.getLogger().isLoggable(Level.FINEST)) {
-		        		this.component.getLogger().finest("valid url to class: " + urlString);
-		        	}
-					
-				} catch (MalformedURLException e) {
-					if(this.component.getLogger().isLoggable(Level.WARNING)) {
-		        		this.component.getLogger().warning("invalid url to class: " + urlString);
-		        	}
-				}
-	            
-	            if (url != null) {
-	            	try (InputStream input = url.openConnection().getInputStream(); ByteArrayOutputStream buffer = new ByteArrayOutputStream()){
-			            //String url = "file:C:/data/projects/tutorials/web/WEB-INF/" + "classes/reflection/MyObject.class";
-
-			            
-			            int data = input.read();
-
-			            while(data != -1){
-			                buffer.write(data);
-			                data = input.read();
-			            }
-
-			            input.close();
-
-			            byte[] classData = buffer.toByteArray();
-
-			            return defineClass(name, classData, 0, classData.length);
-
-			        } catch (Exception e) {
-			        	logger.log(Level.SEVERE, e.getMessage(), e);
-			        } 
-	            }
-	            
-
-		        return null;
-		    }
-		}
 		
-		private List<Handler> extractHandlers(Element documentElement, XPath xPath, MyClassLoader classLoader) throws XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException {
+
+		
+		private List<Handler> extractHandlers(Element documentElement, XPath xPath) throws XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
 			List<Handler> handlers = new ArrayList<Handler>();
 			
 			NodeList nodes = (NodeList) xPath.evaluate("handlers/handler", documentElement, XPathConstants.NODESET);
@@ -541,14 +469,52 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 					logger.finest("initialising new handler: " + s_class + " for event: " + s_event);
 				}
 				
-				classLoader.handleClass(s_class);
-				Class handlerClass = classLoader.loadClass(s_class);
+				String componentClasses = this.getHome() + "/" + "classes" + "/" + s_class.replace(".", "/") + ".class";
 				
-				if (handlerClass != null) {
-					//Constructor c = handlerClass.getConstructor( new Class[] {this.getClass()});
-					//Handler handler = (Handler) c.newInstance(this);
+				ClassLoader loader = new ClassLoader(Thread.currentThread().getContextClassLoader()) {
+					
+					final String classPath = componentClasses.substring(6);
+
+					
+					@Override
+				    protected synchronized Class<?> loadClass(String className, boolean resolve) throws ClassNotFoundException {
+						
+						if (logger.isLoggable(Level.FINEST)) {
+							logger.finest("using custom classLoader to load: " + className + " from location: " + classPath + " for the " + name + " component");
+						}
+			            byte classByte[];
+			            
+		            	
+						try (InputStream is = new FileInputStream(classPath)){
 							
-					AbstractHandler handler = (AbstractHandler) handlerClass.newInstance();
+							ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+			                int nextValue = is.read();
+			                while (-1 != nextValue) {
+			                    byteStream.write(nextValue);
+			                    nextValue = is.read();
+			                }
+
+			                classByte = byteStream.toByteArray();
+			                return  defineClass(className, classByte, 0, classByte.length, null);
+			                
+						} catch (FileNotFoundException e) {
+							return super.loadClass(className, resolve);
+						} catch (IOException e) {
+							return super.loadClass(className, resolve);
+						} catch (Error e) {
+							return super.loadClass(className, resolve);
+						}
+					}
+				};
+				
+				
+				
+				Class myClass = loader.loadClass(s_class);
+				
+				AbstractHandler handler = (AbstractHandler) myClass.newInstance();
+				
+				if (handler != null) {
+					
 					handler.setComponent(this);
 					
 					handlers.add(handler);

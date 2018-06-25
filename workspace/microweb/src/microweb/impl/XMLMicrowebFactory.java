@@ -46,11 +46,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import microweb.core.AbstractFeature;
 import microweb.core.AbstractHandler;
 import microweb.core.AbstractMicrowebFactory;
 import microweb.core.Util;
 import microweb.model.Component;
 import microweb.model.Domain;
+import microweb.model.Feature;
 import microweb.model.Handler;
 import microweb.model.Site;
 
@@ -419,6 +421,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		private String name;
 		private Logger myLogger;
 		private List<Handler> handlers;
+		private Map<String, Feature> features;
 		private String componentHome;
 		//private MyClassLoader classLoader;
 		//private List<String> classNames;
@@ -447,7 +450,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			this.parameters = this.extractProperties(dom.getDocumentElement(), xPath);
 			this.myLogger = this.extractLogger(dom.getDocumentElement(), xPath);
 			this.handlers = this.extractHandlers(dom.getDocumentElement(), xPath);
-			
+			this.features = this.extractFeatures(dom.getDocumentElement(), xPath, this);
 			
 			
 		}
@@ -455,6 +458,50 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		
 
 		
+		private Map<String, Feature> extractFeatures(Element documentElement, XPath xPath, Component component) throws XPathExpressionException, MalformedURLException, SAXException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+			
+			Map<String, Feature> features = new HashMap<String, Feature>();
+			NodeList nodes = (NodeList) xPath.evaluate("features/feature", documentElement, XPathConstants.NODESET);
+			
+			for (int i = 0; i < nodes.getLength(); i++) {
+				Element element = (Element) nodes.item(i);
+				String s_name = xPath.evaluate("@name", element);
+				String s_config = xPath.evaluate("@config", element);
+				String s_xsd = xPath.evaluate("@xsd", element);
+				String s_validateConfig = xPath.evaluate("@validate-config", element);
+				String s_class = xPath.evaluate("@class", element);
+				
+				
+				if (Boolean.parseBoolean(s_validateConfig)) {
+					Util.validateXML(new URL(component.getHome() + s_config), new URL(component.getHome() + "/" + s_xsd));
+				}
+				
+				Class myClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
+						
+				AbstractFeature feature = (AbstractFeature) myClass.newInstance();
+				feature.setName(s_name);
+				
+				if (feature != null) {
+					features.put(feature.getName(), feature);
+					
+					if (logger.isLoggable(Level.FINER)) {
+						logger.finer("component name: " + this.getName() + " has a new feature: " + feature.getName());
+					}
+				}
+			}
+			
+			return features;
+		}
+
+
+
+		protected String getClassPath(String customClass) {
+			String classpath = this.getHome() + "/" + "classes" + "/" + customClass.replace(".", "/") + ".class";
+			
+			return classpath;
+			
+		}
+
 		private List<Handler> extractHandlers(Element documentElement, XPath xPath) throws XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
 			List<Handler> handlers = new ArrayList<Handler>();
 			
@@ -469,47 +516,8 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 					logger.finest("initialising new handler: " + s_class + " for event: " + s_event);
 				}
 				
-				String componentClasses = this.getHome() + "/" + "classes" + "/" + s_class.replace(".", "/") + ".class";
 				
-				ClassLoader loader = new ClassLoader(Thread.currentThread().getContextClassLoader()) {
-					
-					final String classPath = componentClasses.substring(6);
-
-					
-					@Override
-				    protected synchronized Class<?> loadClass(String className, boolean resolve) throws ClassNotFoundException {
-						
-						if (logger.isLoggable(Level.FINEST)) {
-							logger.finest("using custom classLoader to load: " + className + " from location: " + classPath + " for the " + name + " component");
-						}
-			            byte classByte[];
-			            
-		            	
-						try (InputStream is = new FileInputStream(classPath)){
-							
-							ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-			                int nextValue = is.read();
-			                while (-1 != nextValue) {
-			                    byteStream.write(nextValue);
-			                    nextValue = is.read();
-			                }
-
-			                classByte = byteStream.toByteArray();
-			                return  defineClass(className, classByte, 0, classByte.length, null);
-			                
-						} catch (FileNotFoundException e) {
-							return super.loadClass(className, resolve);
-						} catch (IOException e) {
-							return super.loadClass(className, resolve);
-						} catch (Error e) {
-							return super.loadClass(className, resolve);
-						}
-					}
-				};
-				
-				
-				
-				Class myClass = loader.loadClass(s_class);
+				Class myClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
 				
 				AbstractHandler handler = (AbstractHandler) myClass.newInstance();
 				
@@ -558,6 +566,48 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			}
 			return handlers;
 		}
+		
+		private class CustomClassLoader extends ClassLoader {
+			
+			
+			
+			private String classPath;
+
+			CustomClassLoader(String componentClasses) {
+				super(Thread.currentThread().getContextClassLoader());
+				this.classPath = componentClasses.substring(6);
+			}
+			
+			@Override
+		    protected synchronized Class<?> loadClass(String className, boolean resolve) throws ClassNotFoundException {
+				
+				if (logger.isLoggable(Level.FINEST)) {
+					logger.finest("using custom classLoader to load: " + className + " from location: " + classPath + " for the " + name + " component");
+				}
+	            byte classByte[];
+	            
+            	
+				try (InputStream is = new FileInputStream(classPath)){
+					
+					ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+	                int nextValue = is.read();
+	                while (-1 != nextValue) {
+	                    byteStream.write(nextValue);
+	                    nextValue = is.read();
+	                }
+
+	                classByte = byteStream.toByteArray();
+	                return  defineClass(className, classByte, 0, classByte.length, null);
+	                
+				} catch (FileNotFoundException e) {
+					return super.loadClass(className, resolve);
+				} catch (IOException e) {
+					return super.loadClass(className, resolve);
+				} catch (Error e) {
+					return super.loadClass(className, resolve);
+				}
+			}
+		};
 
 		private Logger extractLogger(Element documentElement, XPath xPath) throws XPathExpressionException {
 			Element element = (Element) xPath.evaluate("logger", documentElement, XPathConstants.NODE);

@@ -3,5 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/microweb"/>
+	<classpathentry kind="lib" path="D:/git/microweb/workspace/microweb/WebContent/WEB-INF/components/mwservice/lib/javax.servlet-api-3.0.1.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

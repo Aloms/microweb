@@ -5,15 +5,18 @@
 	<logger name="microweb.services" level="ALL"/>
 
 	<handlers>
-		<handler event="install" class="component.impl.Feature"/>
-		<handler event="activate" class="component.impl.Feature"/>
-		<handler event="initialise" class="component.impl.Feature"/>
-		<handler event="deactivate" class="component.impl.Feature"/>
-		<handler event="uninstall" class="component.impl.Feature"/>
+		<handler event="mwservices.install" class="component.impl.Feature"/>
+		<handler event="mwservices.activate" class="component.impl.Feature"/>
+		<handler event="mwservices.initialise" class="component.impl.Feature"/>
+		<handler event="mwservices.deactivate" class="component.impl.Feature"/>
+		<handler event="mwservices.uninstall" class="component.impl.Feature"/>
 	</handlers>
 	
 	<features>
-		<feature name="services" config="config/custom-config.xml" xsd="config/custom-config.xsd" validate-config="true" class="component.impl.Feature"/>
+		<feature xsd="config/http-service.xsd" factoryClass="component.impl.HttpServiceFactory"/>
 	</features>
-
+	
+	<services>
+		<service config="config/mwversion.xml" type="microweb.services.HttpService"/>
+	</services>
 </component>

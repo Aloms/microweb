@@ -1,3 +1,4 @@
 **/logs/
 **/wtpwebapps/
 workspace/.recommenders/
+bin/apache-tomcat-8.5.27-windows-x64/apache-tomcat-8.5.27/work/

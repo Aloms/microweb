@@ -49,10 +49,12 @@ import org.xml.sax.SAXException;
 import microweb.core.AbstractFeature;
 import microweb.core.AbstractHandler;
 import microweb.core.AbstractMicrowebFactory;
+import microweb.core.ComponentException;
 import microweb.core.Util;
 import microweb.model.Component;
 import microweb.model.Domain;
 import microweb.model.Feature;
+import microweb.model.FeatureFactory;
 import microweb.model.Handler;
 import microweb.model.Site;
 
@@ -65,7 +67,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 	
 	private static final String TEMPLATES_FOLDER = "templates";
 	
-	private static final Logger logger = Logger.getLogger("microweb.config");
+	private static final Logger logger = Logger.getLogger("microweb.config", "messages");
 	
 	@Override
 	public void init() {
@@ -465,29 +467,17 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			
 			for (int i = 0; i < nodes.getLength(); i++) {
 				Element element = (Element) nodes.item(i);
-				String s_name = xPath.evaluate("@name", element);
-				String s_config = xPath.evaluate("@config", element);
 				String s_xsd = xPath.evaluate("@xsd", element);
-				String s_validateConfig = xPath.evaluate("@validate-config", element);
-				String s_class = xPath.evaluate("@class", element);
+				String s_type = xPath.evaluate("@s_type", element);
+				String s_factoryClass = xPath.evaluate("@factoryClass", element);
 				
 				
-				if (Boolean.parseBoolean(s_validateConfig)) {
-					Util.validateXML(new URL(component.getHome() + s_config), new URL(component.getHome() + "/" + s_xsd));
-				}
 				
-				Class myClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
-						
-				AbstractFeature feature = (AbstractFeature) myClass.newInstance();
-				feature.setName(s_name);
+				Class myClass = new CustomClassLoader(getClassPath(s_factoryClass)).loadClass(s_factoryClass);
 				
-				if (feature != null) {
-					features.put(feature.getName(), feature);
-					
-					if (logger.isLoggable(Level.FINER)) {
-						logger.finer("component name: " + this.getName() + " has a new feature: " + feature.getName());
-					}
-				}
+				FeatureFactory featureFactory = (FeatureFactory) myClass.newInstance();
+				
+				featureFactory.initialise(component);
 			}
 			
 			return features;

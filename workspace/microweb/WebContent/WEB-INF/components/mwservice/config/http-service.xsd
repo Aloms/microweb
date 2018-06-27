@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- XML Schema Generated from XML Document on Tue May 29 2018 14:24:10 GMT+0100 (GMT Summer Time) -->
+	<!-- with XmlGrid.net Free Online Service http://xmlgrid.net -->
+
+	<xs:element name="component" type="component"></xs:element>
+
+    <xs:complexType name="component">
+		<xs:all>
+    		<xs:element name="parameters" type="parameters" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="logger" type="logger" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="handlers" type="handlers" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="features" type="features" maxOccurs="1" minOccurs="0"></xs:element>
+    	</xs:all>
+    	<xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+	<xs:complexType name="parameters">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="parameter" type="parameter" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="parameter">
+    	<xs:attribute name="name" type="xs:string" use="required"/>
+    	<xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+    
+    <xs:complexType name="logger">
+    	<xs:attribute name="name" type="xs:string" use="required"/>
+    	<xs:attribute name="level" type="log-level" use="required"/>
+    </xs:complexType>
+    
+	<xs:complexType name="handlers">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="handler" type="handler" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="handler">
+    	<xs:attribute name="event" type="xs:string" use="required"/>
+    	<xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+    
+    <xs:complexType name="features">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="feature" type="feature" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="feature">
+    	<xs:attribute name="name" type="xs:string" use="required"/>
+    	<xs:attribute name="config" type="xs:string"/>
+    	<xs:attribute name="xsd" type="xs:string"/>
+    	<xs:attribute name="validate-config" type="xs:boolean" default="false"/>
+    	<xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+
+	<xs:simpleType name="log-level">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SEVERE" />
+			<xs:enumeration value="WARNING" />
+			<xs:enumeration value="INFO" />
+			<xs:enumeration value="CONFIG" />
+			<xs:enumeration value="FINE" />
+			<xs:enumeration value="FINER" />
+			<xs:enumeration value="FINEST" />
+			<xs:enumeration value="ALL" />
+		</xs:restriction>
+	</xs:simpleType>
+    
+    <!-- 
+    <xs:complexType name="services">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="service" type="service" maxOccurs="unbounded" minOccurs="1"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+
+
+    <xs:complexType name="service">
+    	<xs:all>
+    		<xs:element name="request-parameters" type="request-parameters" maxOccurs="1" minOccurs="1"></xs:element>
+    		<xs:element name="http-methods" type="http-methods" maxOccurs="1" minOccurs="1"></xs:element>
+    		<xs:element name="handler" type="handler" maxOccurs="1" minOccurs="1"></xs:element>
+    	</xs:all>
+    	<xs:attribute name="name" type="xs:string"></xs:attribute>
+    </xs:complexType>
+    
+    <xs:complexType name="request-parameters">
+    	<xs:choice maxOccurs="unbounded">
+    		<xs:element name="parameter" type="parameter" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+
+    <xs:complexType name="parameter">
+    	<xs:attribute name="name" type="xs:string"></xs:attribute>
+    	<xs:attribute name="matches" type="xs:string"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="http-methods">
+    	<xs:choice maxOccurs="unbounded">
+    		<xs:element name="method" type="method" maxOccurs="unbounded" minOccurs="1"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="method">
+    	<xs:attribute name="type" type="methodType" use="required"></xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="handler">
+    	
+        <xs:attribute name="classname" type="xs:string"></xs:attribute>
+    </xs:complexType>
+    
+    <xs:simpleType name="methodType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="DELETE" />
+			<xs:enumeration value="GET" />
+			<xs:enumeration value="HEAD" />
+			<xs:enumeration value="OPTIONS" />
+			<xs:enumeration value="PATCH" />
+			<xs:enumeration value="POST" />
+			<xs:enumeration value="PUT" />
+		</xs:restriction>
+	</xs:simpleType>
+	
+	 -->
+</xs:schema>

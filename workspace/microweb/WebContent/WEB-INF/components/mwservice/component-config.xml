@@ -12,11 +12,15 @@
 		<handler event="mwservices.uninstall" class="component.impl.Feature"/>
 	</handlers>
 	
-	<features>
-		<feature xsd="config/http-service.xsd" factoryClass="component.impl.HttpServiceFactory"/>
-	</features>
+	<extensions>
+		<extension xsd="config/http-service.xsd" class="component.impl.HttpServiceFactory">
+			<types>
+				<type name="HttpService" class="component.model.HttpService"/>
+			</types>
+		</extension>
+	</extensions>
 	
 	<services>
-		<service config="config/mwversion.xml" type="microweb.services.HttpService"/>
+		<service config="config/mwversion.xml" type="HttpService"/>
 	</services>
 </component>

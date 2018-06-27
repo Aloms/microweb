@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -46,15 +47,15 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import microweb.core.AbstractFeature;
+import microweb.core.AbstractExtension;
 import microweb.core.AbstractHandler;
 import microweb.core.AbstractMicrowebFactory;
 import microweb.core.ComponentException;
 import microweb.core.Util;
 import microweb.model.Component;
 import microweb.model.Domain;
-import microweb.model.Feature;
-import microweb.model.FeatureFactory;
+import microweb.model.Extension;
+import microweb.model.ExtensionFactory;
 import microweb.model.Handler;
 import microweb.model.Site;
 
@@ -423,9 +424,9 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		private String name;
 		private Logger myLogger;
 		private List<Handler> handlers;
-		private Map<String, Feature> features;
+		private Map<String, Extension> features;
 		private String componentHome;
-		//private MyClassLoader classLoader;
+		private CustomClassLoader classLoader;
 		//private List<String> classNames;
 		
 		private ComponentImpl(URL componentConfigUrl) throws SAXException, IOException, ParserConfigurationException, XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException {
@@ -436,6 +437,11 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			if (logger.isLoggable(Level.FINE)) {
 				logger.fine("Initialising component at: " + this.componentHome);
 			}
+			
+			List<URL> classPaths = new ArrayList<URL>();
+			classPaths.add(new URL(getClassPath()));
+			
+			classLoader = new CustomClassLoader(classPaths);
 			
 			Document dom = Util.getDocument(componentConfigUrl);
 			
@@ -449,10 +455,10 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			}
 			
 			
-			this.parameters = this.extractProperties(dom.getDocumentElement(), xPath);
-			this.myLogger = this.extractLogger(dom.getDocumentElement(), xPath);
-			this.handlers = this.extractHandlers(dom.getDocumentElement(), xPath);
-			this.features = this.extractFeatures(dom.getDocumentElement(), xPath, this);
+			this.parameters = this.extractProperties(dom.getDocumentElement());
+			this.myLogger = this.extractLogger(dom.getDocumentElement());
+			this.handlers = this.extractHandlers(dom.getDocumentElement());
+			this.features = this.extractExtensions(dom.getDocumentElement(), this);
 			
 			
 		}
@@ -460,24 +466,43 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		
 
 		
-		private Map<String, Feature> extractFeatures(Element documentElement, XPath xPath, Component component) throws XPathExpressionException, MalformedURLException, SAXException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+		private Map<String, Extension> extractExtensions(Element documentElement, Component component) throws XPathExpressionException, MalformedURLException, SAXException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 			
-			Map<String, Feature> features = new HashMap<String, Feature>();
-			NodeList nodes = (NodeList) xPath.evaluate("features/feature", documentElement, XPathConstants.NODESET);
+			if (logger.isLoggable(Level.FINER)) {
+				logger.finer("initialising extentions for: " + this.getName() + " component");
+			}
+			
+			XPath xPath = XPathFactory.newInstance().newXPath();
+			Map<String, Extension> extensions = new HashMap<String, Extension>();
+			NodeList nodes = (NodeList) xPath.evaluate("extensions/extension", documentElement, XPathConstants.NODESET);
+			
+			if (logger.isLoggable(Level.FINER)) {
+				logger.finer(this.getName() + " component has " + nodes.getLength() + " extensions defined");
+			}
 			
 			for (int i = 0; i < nodes.getLength(); i++) {
 				Element element = (Element) nodes.item(i);
 				String s_xsd = xPath.evaluate("@xsd", element);
-				String s_type = xPath.evaluate("@s_type", element);
-				String s_factoryClass = xPath.evaluate("@factoryClass", element);
+				String s_class = xPath.evaluate("@class", element);
 				
 				
+				if (logger.isLoggable(Level.FINER)) {
+					logger.finer("Initialising extension with validator: " + s_xsd + " and factory class: " + s_class);
+				}
 				
-				Class myClass = new CustomClassLoader(getClassPath(s_factoryClass)).loadClass(s_factoryClass);
+				//Class factoryClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
+				Class factoryClass = classLoader.loadClass(s_class);
 				
-				FeatureFactory featureFactory = (FeatureFactory) myClass.newInstance();
+				ExtensionFactory extensionFactory = (ExtensionFactory) factoryClass.newInstance();
 				
-				featureFactory.initialise(component);
+				extensionFactory.initialise(component);
+				
+				if (logger.isLoggable(Level.FINER)) {
+					logger.finer("Checking " + extensionFactory.getClass().getCanonicalName() + " has a corresponding " + ExtensionFactory.FACTORY_METHOD_NAME + "() methods for each of it's declared extension types");
+				}
+				this.checkFactoryMethods(element, extensionFactory, s_xsd);
+				
+				
 			}
 			
 			return features;
@@ -485,16 +510,76 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 
 
 
-		protected String getClassPath(String customClass) {
-			String classpath = this.getHome() + "/" + "classes" + "/" + customClass.replace(".", "/") + ".class";
+		private void checkFactoryMethods(Element extensionElement, ExtensionFactory extensionFactory, String configPath) throws XPathExpressionException, ClassNotFoundException {
+			XPath xPath = XPathFactory.newInstance().newXPath();
+			NodeList nodes = (NodeList) xPath.evaluate("types/type", extensionElement, XPathConstants.NODESET);
+			
+			if (logger.isLoggable(Level.FINER)) {
+				logger.finer(extensionFactory.getClass().getCanonicalName() + " extension factory has " + nodes.getLength() + " extention types defined");
+			}
+			
+			for (int i = 0; i < nodes.getLength(); i++) {
+				Element element = (Element) nodes.item(i);
+				String s_name = xPath.evaluate("@name", element);
+				String s_class = xPath.evaluate("@class", element);
+				
+				if (logger.isLoggable(Level.FINER)) {
+					logger.finer("verifying a factory method exists for the: " + s_name + " type, implemented by the: " + s_class + " class");
+				}
+				
+				//Class extensionType = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
+				Class extensionType = classLoader.loadClass(s_class);
+				
+				Class factoryType = extensionFactory.getClass();
+				
+				
+				
+				try {
+					Method extensionFactoryMethod = factoryType.getMethod(ExtensionFactory.FACTORY_METHOD_NAME, extensionType);
+					
+					ExtensionFactory existingFactory = (ExtensionFactory) Util.getRegistry(Util.REGISTRY_EXTENSION_FACTORIES).putIfAbsent(s_name, extensionFactory);
+					
+					if (existingFactory != null) {
+						
+						handleInitFailed("microweb.components.extension.config.duplicateExtentionType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName(), existingFactory.getClass().getCanonicalName(), existingFactory.getComponent().getName()});
+
+					} else {
+						if (logger.isLoggable(Level.FINER)) {
+							logger.finer("registered the " + extensionFactory.getClass().getCanonicalName() + " extension factory, in the " + extensionFactory.getComponent().getName() + " component, for the " + extensionType + " extension type.  Any components that request an instance of the " + extensionType + " type, will be provisioned by this factory.");
+						}
+					}
+					
+				} catch (NoSuchMethodException e) {
+					handleInitFailed(e, "microweb.components.extension.config.noConstructorForDeclaredType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName(), ExtensionFactory.FACTORY_METHOD_NAME});
+					continue;
+				} catch (SecurityException e) {
+					handleInitFailed(e, "microweb.components.extension.config.inaccessableConstructorForDeclaredType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName()});
+					continue;
+				}
+				
+				
+			}
+		}
+
+
+		protected String getClassPath() {
+			String classpath = this.getHome() + "/" + "classes" + "/";
 			
 			return classpath;
 			
 		}
 
-		private List<Handler> extractHandlers(Element documentElement, XPath xPath) throws XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
+		protected String getClassPath(String customClass) {
+			String classpath = getClassPath() + customClass.replace(".", "/") + ".class";
+			
+			return classpath;
+			
+		}
+
+		private List<Handler> extractHandlers(Element documentElement) throws XPathExpressionException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
 			List<Handler> handlers = new ArrayList<Handler>();
 			
+			XPath xPath = XPathFactory.newInstance().newXPath();
 			NodeList nodes = (NodeList) xPath.evaluate("handlers/handler", documentElement, XPathConstants.NODESET);
 			
 			for (int i = 0; i < nodes.getLength(); i++) {
@@ -507,7 +592,8 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 				}
 				
 				
-				Class myClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
+				//Class myClass = new CustomClassLoader(getClassPath(s_class)).loadClass(s_class);
+				Class myClass = classLoader.loadClass(s_class);
 				
 				AbstractHandler handler = (AbstractHandler) myClass.newInstance();
 				
@@ -557,6 +643,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			return handlers;
 		}
 		
+		/*
 		private class CustomClassLoader extends ClassLoader {
 			
 			
@@ -572,7 +659,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 		    protected synchronized Class<?> loadClass(String className, boolean resolve) throws ClassNotFoundException {
 				
 				if (logger.isLoggable(Level.FINEST)) {
-					logger.finest("using custom classLoader to load: " + className + " from location: " + classPath + " for the " + name + " component");
+					logger.finest("atempting to use custom classLoader to load: " + className + " from location: " + classPath + " for the " + name + " component");
 				}
 	            byte classByte[];
 	            
@@ -587,19 +674,39 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 	                }
 
 	                classByte = byteStream.toByteArray();
-	                return  defineClass(className, classByte, 0, classByte.length, null);
+	                
+	                
+	                Class<?> definedClass = defineClass(className, classByte, 0, classByte.length, null);
+	                
+	                if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("custom classLoader found the: " + definedClass.getCanonicalName() + " file from location: " + classPath + " for the " + name + " component.");
+					}
+	                
+	                return definedClass;
 	                
 				} catch (FileNotFoundException e) {
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("custom classLoader failed with exception: " + e.getMessage() + " for the: " + className + " file from location: " + classPath + " for the " + name + " component. delegating to parent classloader" + this.getParent().getClass().getCanonicalName());
+					}
 					return super.loadClass(className, resolve);
 				} catch (IOException e) {
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("custom classLoader failed with exception: " + e.getMessage() + " for the: " + className + " file from location: " + classPath + " for the " + name + " component. delegating to parent classloader" + this.getParent().getClass().getCanonicalName());
+					}
 					return super.loadClass(className, resolve);
 				} catch (Error e) {
+					if (logger.isLoggable(Level.FINEST)) {
+						logger.finest("custom classLoader failed with error: " + e.getMessage() + " for the "+ className + " file from location: " + classPath + " for the " + name + " component. delegating to parent classloader" + this.getParent().getClass().getCanonicalName());
+					}
 					return super.loadClass(className, resolve);
 				}
 			}
 		};
-
-		private Logger extractLogger(Element documentElement, XPath xPath) throws XPathExpressionException {
+*/
+		private Logger extractLogger(Element documentElement) throws XPathExpressionException {
+			
+			XPath xPath = XPathFactory.newInstance().newXPath();
+			
 			Element element = (Element) xPath.evaluate("logger", documentElement, XPathConstants.NODE);
 			
 			String s_name = xPath.evaluate("@name", element);
@@ -619,9 +726,10 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 			return newLogger;
 		}
 
-		private Properties extractProperties(Element documentElement, XPath xPath) throws XPathExpressionException {
+		private Properties extractProperties(Element documentElement) throws XPathExpressionException {
 			Properties properties = new Properties();
 			
+			XPath xPath = XPathFactory.newInstance().newXPath();
 			NodeList nodes = (NodeList) xPath.evaluate("parameters/parameter", documentElement, XPathConstants.NODESET);
 			
 			for (int i = 0; i < nodes.getLength(); i++) {

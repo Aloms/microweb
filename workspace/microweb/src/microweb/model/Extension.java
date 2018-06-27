@@ -1,6 +1,6 @@
 package microweb.model;
 
-public interface Feature {
+public interface Extension {
 
 	public String getName();
 }

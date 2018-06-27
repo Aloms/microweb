@@ -5,7 +5,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public interface HttpFeature extends Feature{
+public interface HttpExtension extends Extension{
 	
 	public static final HttpMethod HTTP_DELETE = new HttpMethod() {};
 	public static final HttpMethod HTTP_GET = new HttpMethod() {};

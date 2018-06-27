@@ -10,7 +10,8 @@
     		<xs:element name="parameters" type="parameters" maxOccurs="1" minOccurs="0"></xs:element>
     		<xs:element name="logger" type="logger" maxOccurs="1" minOccurs="0"></xs:element>
     		<xs:element name="handlers" type="handlers" maxOccurs="1" minOccurs="0"></xs:element>
-    		<xs:element name="features" type="features" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="extensions" type="extensions" maxOccurs="1" minOccurs="0"></xs:element>
+    		<xs:element name="services" type="services" maxOccurs="1" minOccurs="0"></xs:element>
     	</xs:all>
     	<xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
@@ -42,19 +43,42 @@
     	<xs:attribute name="class" type="xs:string" use="required"/>
     </xs:complexType>
     
-    <xs:complexType name="features">
+    <xs:complexType name="extensions">
         <xs:choice maxOccurs="unbounded">
-    		<xs:element name="feature" type="feature" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    		<xs:element name="extension" type="extension" maxOccurs="unbounded" minOccurs="0"></xs:element>
     	</xs:choice>
     </xs:complexType>
     
-    <xs:complexType name="feature">
-    	<xs:attribute name="name" type="xs:string" use="required"/>
-    	<xs:attribute name="config" type="xs:string"/>
-    	<xs:attribute name="xsd" type="xs:string"/>
-    	<xs:attribute name="validate-config" type="xs:boolean" default="false"/>
+    <xs:complexType name="extension">
+    	<xs:choice maxOccurs="unbounded">
+    		<xs:element name="types" type="types" maxOccurs="unbounded" minOccurs="1"></xs:element>
+    	</xs:choice>
+    	<xs:attribute name="xsd" type="xs:string" use="required"/>
     	<xs:attribute name="class" type="xs:string" use="required"/>
     </xs:complexType>
+    
+    <xs:complexType name="types">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="type" type="type" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="type">
+    	<xs:attribute name="name" type="xs:string" use="required"/>
+    	<xs:attribute name="class" type="xs:string" use="required"/>
+    </xs:complexType>
+    
+    <xs:complexType name="services">
+        <xs:choice maxOccurs="unbounded">
+    		<xs:element name="service" type="service" maxOccurs="unbounded" minOccurs="0"></xs:element>
+    	</xs:choice>
+    </xs:complexType>
+    
+    <xs:complexType name="service">
+    	<xs:attribute name="config" type="xs:string" use="required"/>
+    	<xs:attribute name="type" type="xs:string" use="required"/>
+    </xs:complexType>
+    
 
 	<xs:simpleType name="log-level">
 		<xs:restriction base="xs:string">

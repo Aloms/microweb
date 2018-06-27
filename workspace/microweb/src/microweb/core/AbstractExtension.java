@@ -1,8 +1,8 @@
 package microweb.core;
 
-import microweb.model.Feature;
+import microweb.model.Extension;
 
-public class AbstractFeature implements Feature{
+public class AbstractExtension implements Extension{
 
 	private String name;
 

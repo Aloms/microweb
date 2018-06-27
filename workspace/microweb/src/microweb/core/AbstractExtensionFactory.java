@@ -3,13 +3,13 @@ package microweb.core;
 import java.net.URL;
 
 import microweb.model.Component;
-import microweb.model.FeatureFactory;
+import microweb.model.ExtensionFactory;
 
-public abstract class AbstractFeatureFactory implements FeatureFactory {
+public abstract class AbstractExtensionFactory implements ExtensionFactory {
 
 	private Component component;
 	
-	protected Component getComponent() {
+	public Component getComponent() {
 		return component;
 	}
 
@@ -17,7 +17,5 @@ public abstract class AbstractFeatureFactory implements FeatureFactory {
 	public void initialise(Component component) {
 		this.component = component;
 	}
-	
-	protected abstract void construct(URL pathToConfig);
 
 }

@@ -41,6 +41,7 @@ public class Util {
 	public static final String REGISTRY_COMPONENTS = "MW_COMPONENTS";
 	public static final String REGISTRY_SITES = "MW_SITES";
 	public static final String REGISTRY_DOMAINS = "MW_DOMAINS";
+	public static final String REGISTRY_EXTENSION_FACTORIES = "MW_EXTENSION_FACTORIES";
 	
 	
 	

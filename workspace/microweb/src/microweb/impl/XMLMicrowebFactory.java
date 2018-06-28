@@ -535,7 +535,14 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 				
 				
 				try {
-					Method extensionFactoryMethod = factoryType.getMethod(ExtensionFactory.FACTORY_METHOD_NAME, extensionType);
+					Method extensionFactoryMethod = factoryType.getMethod(ExtensionFactory.FACTORY_METHOD_NAME, new Class[] {URL.class, extensionType});
+					
+					/*
+					Method[] methods = factoryType.getDeclaredMethods();
+					
+					for (Method m : methods) {
+						m.
+					}*/
 					
 					ExtensionFactory existingFactory = (ExtensionFactory) Util.getRegistry(Util.REGISTRY_EXTENSION_FACTORIES).putIfAbsent(s_name, extensionFactory);
 					
@@ -550,7 +557,7 @@ public class XMLMicrowebFactory extends AbstractMicrowebFactory {
 					}
 					
 				} catch (NoSuchMethodException e) {
-					handleInitFailed(e, "microweb.components.extension.config.noConstructorForDeclaredType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName(), ExtensionFactory.FACTORY_METHOD_NAME});
+					handleInitFailed(e, "microweb.components.extension.config.noConstructorForDeclaredType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName()});
 					continue;
 				} catch (SecurityException e) {
 					handleInitFailed(e, "microweb.components.extension.config.inaccessableConstructorForDeclaredType", new Object[] {configPath, extensionFactory.getComponent().getName(), factoryType.getCanonicalName(), extensionType.getCanonicalName()});

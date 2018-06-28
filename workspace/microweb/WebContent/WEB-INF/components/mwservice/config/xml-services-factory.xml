@@ -1,0 +1,3 @@
+<factory name="XMLServicesFactory">
+	<xml-validator xsd="http-service.xsd"/>
+</factory>

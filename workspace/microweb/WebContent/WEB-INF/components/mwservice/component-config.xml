@@ -4,23 +4,67 @@
 	</parameters>
 	<logger name="microweb.services" level="ALL"/>
 
-	<handlers>
-		<handler event="mwservices.install" class="component.impl.Feature"/>
-		<handler event="mwservices.activate" class="component.impl.Feature"/>
-		<handler event="mwservices.initialise" class="component.impl.Feature"/>
-		<handler event="mwservices.deactivate" class="component.impl.Feature"/>
-		<handler event="mwservices.uninstall" class="component.impl.Feature"/>
-	</handlers>
+	<!-- this component may signal the following events -->
+	<!-- event handlers can be used to listen for these events -->
+	<!-- when the event occurs, the event handler is called -->
+	<published-events>
+		<event name="install"/>
+		<event name="installed"/>
+		<event name="activate"/>
+		<event name="activated"/>
+		<event name="initialise"/>
+		<event name="initialised"/>
+		<event name="deactivate"/>
+		<event name="deactivated"/>
+		<event name="uninstall"/>
+		<event name="uninstalled"/>
+	</published-events>
 	
+	<event-handlers>
+		<!-- exclusive event handlers will consume an event, without allowing any other event handlers to process it -->
+		<!-- if more than one event handler is defined as exclusive for the same event, then only the one with the highest priority will be used -->
+		<handler event="install" class="component.impl.Feature" priority="100" isExcusive="true"/>
+		<handler event="activate" class="component.impl.Feature" priority="100"/>
+		<handler event="initialise" class="component.impl.Feature" priority="100"/>
+		<handler event="deactivate" class="component.impl.Feature" priority="100"/>
+		<handler event="uninstall" class="component.impl.Feature" priority="100"/>
+	</event-handlers>
+	
+	<!-- extensions are a way to add new functionality to he platform -->
 	<extensions>
-		<extension xsd="config/http-service.xsd" class="component.impl.HttpServiceFactory">
+	
+		<!-- an extension defines a type of funtionality, and leaves the implementation to features -->
+		<extension>
+			
 			<types>
+			
+				<!-- a http service is one which can serve communicate over http -->
 				<type name="HttpService" class="component.model.HttpService"/>
+				<!-- need framework for the following -->
+				<!-- 
+				<type name="BatchService" class="component.model.BatchService"/>
+				<type name="ScheduledService" class="component.model.ScheduledService"/>
+				 -->
 			</types>
+			
+			<!-- factories offer feature implementations a way of being constructed -->
+			<factories>
+			
+				
+				<factory config="config/xml-services-factory.xml" xsd="config/xml-services-factory.xsd" class="component.impl.XMLServicesFactory"/>
+			</factories>
 		</extension>
+		<!-- 
+		<extension xsd="config/http-service.xsd" class="component.impl.HttpServiceFactory">
+			
+		</extension>
+		 -->
 	</extensions>
 	
-	<services>
-		<service config="config/mwversion.xml" type="HttpService"/>
-	</services>
+	<!-- features are implementation of functionality, using one or more predefined extensions, either from this component or another -->
+	<features>
+		<!-- this feature is an implementation of the HttpService type, and will be used to provide version information -->
+		<!-- it will used the  XMLServicesFactory factory to construct the service and publish it on the microweb platform -->
+		<feature config="config/microweb-version-service.xml" type="HttpService" factory="XMLServicesFactory"/>
+	</features>
 </component>
